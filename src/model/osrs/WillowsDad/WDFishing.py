@@ -122,6 +122,8 @@ class OSRSWDFishing(WillowsDadBot):
                     self.log_msg("Fishing...")
                     self.go_fish()
                 else:
+                    if self.spec_energy >= 100 and self.dragon_special:
+                        self.activate_special()
                     self.go_minnow_fishing()
                 
 
@@ -151,13 +153,15 @@ class OSRSWDFishing(WillowsDadBot):
                 self.update_progress((time.time() - self.start_time) / self.end_time)
                 self.last_progress = round(self.progress, 2)
 
-            # relogin every 4-5 hours
+            # relogin every 3-5 hours
             if self.login_after and runtime > (60* int(rd.fancy_normal_sample(180, 240))):
                 self.start_time = time.time()
                 self.end_time = self.start_time + (self.running_time * 60)
+                self.progress = 0
                 self.logout()
-                self.random_sleep_length(10,80)
+                self.sleep(self.random_sleep_length(60, 132))
                 self.sign_in()
+                self.sleep(self.random_sleep_length(4, 7))
 
         self.update_progress(1)
         self.log_msg("Finished.")
