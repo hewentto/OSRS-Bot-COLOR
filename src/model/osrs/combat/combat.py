@@ -115,7 +115,7 @@ class OSRSCombat(OSRSBot, launcher.Launchable):
                 if not self.mouseover_text(contains="Attack", color=clr.OFF_WHITE):
                     continue
                 self.mouse.click()
-                time.sleep(0.5)
+                time.sleep(1)
 
             # While in combat
             while api_morg.get_is_in_combat():

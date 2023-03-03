@@ -7,7 +7,7 @@
   },
   {
    "optionDest": "filenames",
-   "value": "C:/Users/Kell/Desktop/OSRS-Bot-COLOR/src/OSBC.py"
+   "value": "C:/Users/JaredDenning/Desktop/Personal/ColorBot/OSRS-Bot-COLOR/src/OSBC.py"
   },
   {
    "optionDest": "onefile",
@@ -19,7 +19,7 @@
   },
   {
    "optionDest": "icon_file",
-   "value": "C:/Users/Kell/Desktop/OSRS-Bot-COLOR/documentation/media/icon.ico"
+   "value": "C:/Users/JaredDenning/Desktop/Personal/ColorBot/OSRS-Bot-COLOR/documentation/media/icon.ico"
   },
   {
    "optionDest": "ascii",
@@ -71,31 +71,31 @@
   },
   {
    "optionDest": "datas",
-   "value": "C:/Users/Kell/Desktop/OSRS-Bot-COLOR/env/Lib/site-packages/customtkinter;customtkinter"
+   "value": "C:/Users/JaredDenning/Desktop/Personal/ColorBot/OSRS-Bot-COLOR/env/Lib/site-packages/customtkinter;customtkinter"
   },
   {
    "optionDest": "datas",
-   "value": "C:/Users/Kell/Desktop/OSRS-Bot-COLOR/src/model;model"
+   "value": "C:/Users/JaredDenning/Desktop/Personal/ColorBot/OSRS-Bot-COLOR/src/model;model"
   },
   {
    "optionDest": "datas",
-   "value": "C:/Users/Kell/Desktop/OSRS-Bot-COLOR/src/runelite_settings;runelite_settings"
+   "value": "C:/Users/JaredDenning/Desktop/Personal/ColorBot/OSRS-Bot-COLOR/src/runelite_settings;runelite_settings"
   },
   {
    "optionDest": "datas",
-   "value": "C:/Users/Kell/Desktop/OSRS-Bot-COLOR/src/utilities;utilities"
+   "value": "C:/Users/JaredDenning/Desktop/Personal/ColorBot/OSRS-Bot-COLOR/src/utilities;utilities"
   },
   {
    "optionDest": "datas",
-   "value": "C:/Users/Kell/Desktop/OSRS-Bot-COLOR/src/view;view"
+   "value": "C:/Users/JaredDenning/Desktop/Personal/ColorBot/OSRS-Bot-COLOR/src/view;view"
   },
   {
    "optionDest": "datas",
-   "value": "C:/Users/Kell/Desktop/OSRS-Bot-COLOR/src/images;images"
+   "value": "C:/Users/JaredDenning/Desktop/Personal/ColorBot/OSRS-Bot-COLOR/src/images;images"
   },
   {
    "optionDest": "datas",
-   "value": "C:/Users/Kell/Desktop/OSRS-Bot-COLOR/src/controller;controller"
+   "value": "C:/Users/JaredDenning/Desktop/Personal/ColorBot/OSRS-Bot-COLOR/src/controller;controller"
   }
  ],
  "nonPyinstallerOptions": {
