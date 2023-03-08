@@ -106,7 +106,7 @@ class OSRSCombat(OSRSBot, launcher.Launchable):
             # If inventory is full...
             if api_status.get_is_inv_full():
                 self.log_msg("Inventory is full. Idk what to do.")
-                self.set_status(BotStatus.STOPPED)
+                self.stop()
                 return
 
             # While not in combat

@@ -315,7 +315,7 @@ class App(customtkinter.CTk):
         self.listener.join()
 
     def __on_press(self, key, bot: Bot):
-        if key == keyboard.Key.ctrl_l:
+        if key == keyboard.Key.ctrl_r:
             bot.thread.stop()
             self.listener.stop()
 

@@ -109,7 +109,7 @@ class MorgHTTPSocket:
                 An int representing the current animation ID.
         """
         data = self.__do_get(endpoint=self.events_endpoint)
-        return int(data["animation pose"]) if data.get("animation pose") else -1
+        return int(data["animation"]) if data.get("animation pose") else -1
 
     def get_is_player_idle(self, poll_seconds=1) -> bool:
         """
@@ -318,6 +318,15 @@ class MorgHTTPSocket:
         """
         data = self.__do_get(endpoint=self.inv_endpoint)
         return len([item["id"] for item in data if item["id"] != -1]) == 28
+    
+    def get_is_inv_empty(self) -> bool:
+        """
+        Checks if player's inventory is empty.
+        Returns:
+                True if the player's inventory is empty, False otherwise.
+        """
+        data = self.__do_get(endpoint=self.inv_endpoint)
+        return len([item["id"] for item in data if item["id"] != -1]) == 0
 
     def get_inv_item_indices(self, item_id: Union[List[int], int]) -> list:
         """
@@ -334,6 +343,23 @@ class MorgHTTPSocket:
         elif isinstance(item_id, list):
             return [i for i, inventory_slot in enumerate(data) if inventory_slot["id"] in item_id]
 
+    def get_inv_item_index(self, item_id: Union[List[int], int]) -> int:
+        """
+        For the given item ID(s), returns the first inventory slot index that the item exists in.
+        e.g. [1, 1, 2, 3, 3, 3, 4, 4, 4, 4] -> [0, 2, 3, 6]
+        IMPORTANT ~ This does so by checking if the current item ID is the same as the previous item ID. ~
+        Args:
+                item_id: The item ID to search for (an single ID, or list of IDs).
+        Returns:
+                The first inventory slot index that the item exists in.
+        """
+        data = self.__do_get(endpoint=self.inv_endpoint)
+        if isinstance(item_id, int):
+            return next((i for i, inventory_slot in enumerate(data) if inventory_slot["id"] == item_id), -1)
+        elif isinstance(item_id, list):
+            slot_list = [i for i, inventory_slot in enumerate(data) if inventory_slot["id"] != data[i - 1]["id"] and inventory_slot["id"] in item_id]
+            return slot_list if len(slot_list) > 0 else -1
+        
     def get_inv_item_stack_amount(self, item_id: Union[int, List[int]]) -> int:
         """
         For the given item ID, returns the total amount of that item in your inventory.

@@ -171,7 +171,7 @@ class Mouse:
         elif speed == "fast":
             min, max = 20, 40
         elif speed == "fastest":
-            min, max = 10, 15
+            min, max = 10, 30
         else:
             raise ValueError("Invalid mouse speed. Try 'slowest', 'slow', 'medium', 'fast', or 'fastest'.")
         return round(truncated_normal_sample(min, max))
