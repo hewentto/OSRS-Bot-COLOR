@@ -82,11 +82,6 @@ class OSRSFirstWc(OSRSBot):
         Visit the Wiki for more.
         """
         # Setup APIs
-        api_m = MorgHTTPSocket()
-        # api_s = StatusSocket()
-
-        # Main loop
-        start_time = time.time()
         end_time = self.running_time * 60
         while time.time() - start_time < end_time:
             # -- Perform bot actions here --
