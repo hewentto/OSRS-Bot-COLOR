@@ -15,7 +15,17 @@ import threading
 
 
 class OSRSFirstWc(OSRSBot):
+    """This bot will cut trees and bank the logs if the bank is tagged and within render distance.
+    Assumes: 
+        Axe is equipped, or in inventory
+        Bank is tagged YELLOW
+        Trees are tagged GREEN
+        Trees and Bank are within screen view
+    Settings:
+        AFK Training: Will 'Alt + Tab' to another window anytime you are woodcutting.
+        Take Breaks: Will roll a chance for a break every 15 seconds, chance increases by 1% each minute."""
     def __init__(self):
+<<<<<<< HEAD
         bot_title = "Low Level Woodcutting"
 <<<<<<< HEAD
         description = "<Bot description here.>"
@@ -24,14 +34,12 @@ class OSRSFirstWc(OSRSBot):
         self.running_time = 1
         self.take_breaks = True
 =======
+=======
+        bot_title = "No Pathing Woodcutting"
+>>>>>>> c462b71 (Updated class descrption)
         description = """This bot will cut trees and bank the logs if the bank is tagged and within render distance.
-        Assumes: 
-            Axe is equipped, or in inventory.
-            Bank is tagged YELLOW, Trees are tagged GREEN.
-            Trees and Bank are within screen view.
-        Settings:
-            AFK Training: Will 'Alt + Tab' to another window anytime you are woodcutting.
-            Take Breaks: Will roll a chance for a break every 15 seconds, chance increases by 1% each minute.
+        Assumes: Axe is equipped, or in inventory, Bank is tagged YELLOW, Trees are tagged GREEN, Trees and Bank are within screen view.
+        Settings:AFK Training: Will 'Alt + Tab' to another window anytime you are woodcutting. Take Breaks: Will roll a chance for a break every 15 seconds, chance increases by 1% each minute.
         Locations: Power Chopping : Anywhere, Banking : Draynor (Oak, Willow), Seers Village (Maple), Woodcutting Guild (Yew, Magic)"""
         super().__init__(bot_title=bot_title, description=description)
         # Set option variables below (initial value is only used during UI-less testing)
@@ -40,8 +48,8 @@ class OSRSFirstWc(OSRSBot):
         self.afk_train = False
         self.power_chopping = False
         self.log_type = ids.YEW_LOGS
-        self.delay_min =0.8
-        self.delay_max = 1.3
+        self.delay_min =0.88
+        self.delay_max = 1.35
         self.dragon_special = False
 >>>>>>> 1e39941 (Adding Features)
 
@@ -61,9 +69,14 @@ class OSRSFirstWc(OSRSBot):
         self.options_builder.add_checkbox_option("take_breaks", "Take breaks?", [" "])
         self.options_builder.add_checkbox_option("power_chopping", "Power Chopping? Drops everything in inventory.", [" "])
         self.options_builder.add_checkbox_option("dragon_special", "Use Dragon Axe Special?", [" "])
+<<<<<<< HEAD
         self.options_builder.add_slider_option("delay_min", "How long to take between actions (min) (MiliSeconds)?", 600,3000)
         self.options_builder.add_slider_option("delay_max", "How long to take between actions (max) (MiliSeconds)?", 650,3000)
 >>>>>>> 1e39941 (Adding Features)
+=======
+        self.options_builder.add_slider_option("delay_min", "How long to take between actions (min) (MiliSeconds)?", 750,3000)
+        self.options_builder.add_slider_option("delay_max", "How long to take between actions (max) (MiliSeconds)?", 850,3000)
+>>>>>>> c462b71 (Updated class descrption)
 
     def save_options(self, options: dict):
         """
@@ -296,7 +309,6 @@ class OSRSFirstWc(OSRSBot):
         api_m = MorgHTTPSocket()
 
         if api_m.get_is_inv_full():
-            self.log_msg("Inventory is full, gonna deposit before checking for nests...")
             return
         """Picks up loot while there is loot on the ground"""
         while self.pick_up_loot(["Bird nest", "Clue nest (easy)", "Clue nest (medium)","Clue nest (hard)","Clue nest (elite)"]):
@@ -304,7 +316,6 @@ class OSRSFirstWc(OSRSBot):
             self.log_msg("Picking up loot...")
             for _ in range(5):  # give the bot 5 seconds to pick up the loot
                 if len(api_s.get_inv()) != curr_inv:
-                    self.log_msg("Loot picked up.")
                     time.sleep(self.random_sleep_length())
                     break
                 time.sleep(self.random_sleep_length(.8, 1.3))
@@ -329,7 +340,6 @@ class OSRSFirstWc(OSRSBot):
 
         # move mouse each slot and click to deposit all
         for slot in slot_list:
-            self.log_msg("Depositing all items...")
             self.mouse.move_to(self.win.inventory_slots[slot].random_point())
             time.sleep(self.random_sleep_length(.8, 1.3))
             if not self.mouseover_text(contains=["All"]):
@@ -343,7 +353,6 @@ class OSRSFirstWc(OSRSBot):
                 self.stop()
 
         # we now exit bank by sending the escape key
-        self.log_msg("Exiting bank...")
         pag.press("esc")
         self.random_sleep_length()
         
@@ -368,7 +377,7 @@ class OSRSFirstWc(OSRSBot):
     
     # randomized sleep lengh function returns a random float between min and max
     def random_sleep_length(self, delay_min=0, delay_max=0):
-        # deaful delay min and max
+        """Returns a random float between min and max"""
         if delay_min == 0:
             delay_min = self.delay_min
         if delay_max == 0:
@@ -439,21 +448,18 @@ class OSRSFirstWc(OSRSBot):
         break_time = random.uniform(1, 15)
 
         if rd.random_chance(.7):
-            self.log_msg("Taking a Sklls break...")
+            self.log_msg("Taking a Sklls Tab break...")
             self.mouse.move_to(self.win.cp_tabs[1].random_point())
             time.sleep(self.random_sleep_length())
             if self.mouseover_text(contains="Skills"):
-                self.log_msg("Found Skills tab...")
                 self.mouse.click()
                 self.mouse.move_to(self.win.control_panel.random_point())
-                self.log_msg(f"Waiting for {round(break_time)} seconds and then clicking inventory...")
                 time.sleep(break_time)
 
                 # go back to inventory
                 self.mouse.move_to(self.win.cp_tabs[3].random_point())
                 time.sleep(self.random_sleep_length())
                 if self.mouseover_text(contains="Inventory"):
-                    self.log_msg("Found Inventory tab...")
                     self.mouse.click()
             else:
                 self.log_msg("Skills tab not found, break function didn't work...")
@@ -463,17 +469,14 @@ class OSRSFirstWc(OSRSBot):
             self.mouse.move_to(self.win.cp_tabs[4].random_point())
             time.sleep(self.random_sleep_length())
             if self.mouseover_text(contains="Worn"):
-                self.log_msg("Found Equipment tab...")
                 self.mouse.click()
 
                 self.mouse.move_to(self.win.control_panel.random_point())
-                self.log_msg(f"Waint for {round(break_time)} seconds and then clicking inventory...")
                 time.sleep(break_time)
 
                 # go back to inventory
                 self.mouse.move_to(self.win.cp_tabs[3].random_point())
                 if self.mouseover_text(contains="Inventory"):
-                    self.log_msg("Found Inventory tab...")
                     self.mouse.click()
 
             else:
@@ -532,7 +535,7 @@ class OSRSFirstWc(OSRSBot):
             time.sleep(self.random_sleep_length())
 
             if search_tries > 5:
-                self.log_msg(f"Did not see 'Bank' in mousove text after {search_tries} searches, quitting bot so you can fix it...")
+                self.log_msg(f"Did not see 'Bank' in mouseover text after {search_tries} searches, quitting bot so you can fix it...")
                 self.stop()
             search_tries += 1
 
@@ -711,7 +714,6 @@ class OSRSFirstWc(OSRSBot):
                     self.log_msg("Inventory is full but runelight is not in focus, lets wait...")
                     time.sleep(self.random_sleep_length(.8, 1.2))
                     break
-            self.log_msg("Inventory is full, calling the bank function...")
             self.find_bank(deposit_slots)
         else:
             self.log_msg("Inventory is full, dropping everything...")
