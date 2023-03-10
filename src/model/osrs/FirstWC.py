@@ -25,10 +25,7 @@ class OSRSFirstWc(OSRSBot):
         Take Breaks: Will roll a chance for a break every 15 seconds, chance increases by 1% each minute."""
     def __init__(self):
         bot_title = "No Pathing Woodcutting"
-        description = """This bot will cut trees and bank the logs if the bank is tagged and within render distance.
-        Assumes: Axe is equipped, or in inventory, Bank is tagged YELLOW, Trees are tagged GREEN, Trees and Bank are within screen view.
-        Settings:AFK Training: Will 'Alt + Tab' to another window anytime you are woodcutting. Take Breaks: Will roll a chance for a break every 15 seconds, chance increases by 1% each minute.
-        Locations: Power Chopping : Anywhere, Banking : Draynor (Oak, Willow), Seers Village (Maple), Woodcutting Guild (Yew, Magic)"""
+        description = """Chops wood and banks at supported locations."""
         super().__init__(bot_title=bot_title, description=description)
         # Set option variables below (initial value is only used during UI-less testing)
         self.running_time = 60
