@@ -29,12 +29,12 @@ class OSRSFirstWc(OSRSBot):
         super().__init__(bot_title=bot_title, description=description)
         # Set option variables below (initial value is only used during UI-less testing)
         self.running_time = 60
-        self.take_breaks = False
-        self.afk_train = False
+        self.take_breaks = True
+        self.afk_train = True
         self.power_chopping = False
-        self.log_type = ids.YEW_LOGS
-        self.delay_min =0.88
-        self.delay_max = 1.35
+        self.log_type = ids.MAGIC_LOGS
+        self.delay_min =0.37
+        self.delay_max = .67
         self.dragon_special = False
 
     def create_options(self):
@@ -50,8 +50,8 @@ class OSRSFirstWc(OSRSBot):
         self.options_builder.add_checkbox_option("take_breaks", "Take breaks?", [" "])
         self.options_builder.add_checkbox_option("power_chopping", "Power Chopping? Drops everything in inventory.", [" "])
         self.options_builder.add_checkbox_option("dragon_special", "Use Dragon Axe Special?", [" "])
-        self.options_builder.add_slider_option("delay_min", "How long to take between actions (min) (MiliSeconds)?", 600,3000)
-        self.options_builder.add_slider_option("delay_max", "How long to take between actions (max) (MiliSeconds)?", 900,3000)
+        self.options_builder.add_slider_option("delay_min", "How long to take between actions (min) (MiliSeconds)?", 300,3000)
+        self.options_builder.add_slider_option("delay_max", "How long to take between actions (max) (MiliSeconds)?", 650,3000)
 
     def save_options(self, options: dict):
         """
@@ -93,14 +93,28 @@ class OSRSFirstWc(OSRSBot):
                 self.options_set = False
                 return
         self.log_msg(f"Running time: {self.running_time} minutes.")
-        self.log_msg(f"Bot will{' not' if not self.take_breaks else ''} take breaks.")
-        self.log_msg(f"Bot will{' not' if not self.afk_train else ''} train like you're afk on another tab.")
-        self.log_msg(f"Bot will{' not' if not self.power_chopping else ''} power chop.")
+        self.log_msg(f"Bot will{'' if self.take_breaks else ' not'} take breaks.")
+        self.log_msg(f"Bot will{'' if self.afk_train else ' not'} train like you're afk on another tab.")
+        self.log_msg(f"Bot will{'' if self.power_chopping else ' not'} power chop.")
         self.log_msg(f"Bot will cut {options['log_type']} logs.")
         self.log_msg(f"Bot will wait between {self.delay_min} and {self.delay_max} seconds between actions.")
-        self.log_msg(f"Bot will{' not' if not self.dragon_special else ''} use dragon axe special.")
+        self.log_msg(f"Bot will{'' if self.dragon_special else ' not'} use dragon axe special.")
         self.log_msg("Options set successfully.")
         self.options_set = True
+
+    # threading class with stop function
+    class StoppableThread(threading.Thread):
+        """Thread class with a stop() method. The thread itself has to check"""
+        def __init__(self, target=None, args=()):
+            super().__init__(target=target, args=args)
+            self._stop_event = threading.Event()
+
+        def stop(self):
+            self._stop_event.set()
+
+        def stopped(self):
+            return self._stop_event.is_set()
+
 
     def main_loop(self):
         """
@@ -148,7 +162,7 @@ class OSRSFirstWc(OSRSBot):
      
                 
             # -- End bot actions --
-            self.roll_break(runtime, percentage, minutes_since_last_break, seconds, deposit_slots)
+            self.check_break(runtime, percentage, minutes_since_last_break, seconds, deposit_slots)
             current_progress = round((time.time() - self.start_time) / self.end_time, 2)
             if current_progress != round(self.last_progress, 2):
                 self.update_progress((time.time() - self.start_time) / self.end_time)
@@ -179,14 +193,15 @@ class OSRSFirstWc(OSRSBot):
         self.loop_count = 0
         self.api_m = MorgHTTPSocket()
         self.spec_energy = self.get_special_energy()
+        self.last_runtime = 0
 
         if self.dragon_special:
             self.check_axe()
         
 
-        if not self.get_nearest_tag(clr.YELLOW) and not self.power_chopping:
-            self.log_msg("Bank booths should be tagged with yellow, and in screen view. Please fix this.")
-            self.stop()
+        # if not self.get_nearest_tag(clr.YELLOW) and not self.power_chopping:
+        #     self.log_msg("Bank booths should be tagged with yellow, and in screen view. Please fix this.")
+        #     self.stop()
         if not self.get_nearest_tag(clr.PINK):
             self.log_msg("Trees should be tagged with pink, and in screen view. Please fix this.")
             self.stop()
@@ -249,7 +264,7 @@ class OSRSFirstWc(OSRSBot):
                 self.mouse.click()
                 time.sleep(self.random_sleep_length())
             if try_count > 5:
-                self.log_msg(f"Tried to deposit 5 times, quitting bot so you can fix it...")
+                self.log_msg(f"Tried to deposit {try_count} times, quitting bot so you can fix it...")
                 self.stop()
 
         # we now exit bank by sending the escape key
@@ -267,10 +282,9 @@ class OSRSFirstWc(OSRSBot):
             None"""
         Desposit_all_img = imsearch.BOT_IMAGES.joinpath("bank", "bank_all.png")
         end_time = time.time() + self.random_sleep_length()
-        
-        while(time.time() < end_time):
-            deposit_btn = imsearch.search_img_in_rect(Desposit_all_img, self.win.game_view)
-            if deposit_btn:
+
+        while (time.time() < end_time):
+            if deposit_btn := imsearch.search_img_in_rect(Desposit_all_img, self.win.game_view):
                 return True
             time.sleep(.1)
         return False
@@ -291,29 +305,28 @@ class OSRSFirstWc(OSRSBot):
             color: color to look for
         Returns:
             None/Void"""
-        random_x = random.randint(15, 25) 
-        random_y = random.randint(1, 3)
+        random_x = random.randint(90, 180) 
         start_time = time.time() # lets make sure we don't wait too long
 
         # chance for x to be negative
         if random.randint(0, 1) == 1:
             random_x *= -1
-        # y is usually positive
-        if random.randint(0, 15) > 11:
-            random_y *= -1
-        random_xy = (random_x, random_y)  # tuple of random x and y
+        random_xy = (random_x, 0)  # tuple of random x and y
+
+        # call the camera function on a new thread
+        camera_thread = self.StoppableThread(target=self.move_camera, args=(random_xy))
+        camera_thread.start()
 
         while not self.get_nearest_tag(color):
-            # call the camera function on a new thread
-            camera_thread = threading.Thread(target=self.move_camera, args=(random_xy))
-            camera_thread.start()
-            camera_thread.join()
-
             time_searching = time.time() - start_time
 
             if time_searching > timeout:
                 self.log_msg(f"Could not find highlighted color in {timeout} seconds...")
+                camera_thread.stop()    
                 return None
+            time.sleep(self.random_sleep_length(.35, .65))
+        camera_thread.stop()
+        time.sleep(self.random_sleep_length())
             
     # Function to usually choose first bank but sometimes choose second bank
     def choose_bank(self):
@@ -329,16 +342,13 @@ class OSRSFirstWc(OSRSBot):
             if len(banks) == 1:
                 return banks[0]
             if (len(banks) > 1):
-                if rd.random_chance(.74):
-                    return banks[0]
-                else:
-                    return banks[1]
+                return banks[0] if rd.random_chance(.74) else banks[1]
         else:
             self.log_msg("No banks found, trying to adjust camera...")
             self.adjust_camera(clr.YELLOW)
             return (self.choose_bank())
 
-    def take_menu_break(self):
+    def take_menu_break(self):  # sourcery skip: extract-duplicate-method
         """
         This will take a random menu break [Skills, Combat].]
         Returns: void
@@ -465,7 +475,7 @@ class OSRSFirstWc(OSRSBot):
         current_window = pag.getActiveWindow()
 
         # Check if the window title contains a certain keyword (e.g. "Google Chrome")
-        if current_window == None:
+        if current_window is None:
             return False
         if "runelite" in current_window.title.lower():
             self.is_focused = True
@@ -487,15 +497,11 @@ class OSRSFirstWc(OSRSBot):
 
         pag.hotkey("alt", "tab")
         time.sleep(self.random_sleep_length())
-        
+
         new_window = pag.getActiveWindow()
         self.log_msg(f"Current window: {new_window.title}.")
 
-        if "RuneLite" in new_window.title:
-            self.is_focused = True
-        else:
-            self.is_focused = False
-        
+        self.is_focused = "RuneLite" in new_window.title
         if current_window.title == new_window.title:
             self.log_msg("Window not switched, something is wrong, quitting bot.")
             self.stop()
@@ -514,12 +520,9 @@ class OSRSFirstWc(OSRSBot):
         current_animation = api_m.get_animation_id()
 
         # check if the current animation is woodcutting
-        if current_animation in woodcutting_animation_list:
-            return True
-        else:
-            return False
+        return current_animation in woodcutting_animation_list
         
-    def roll_break(self, runtime, percentage, minutes_since_last_break, seconds, deposit_slots):
+    def check_break(self, runtime, percentage, minutes_since_last_break, seconds, deposit_slots):
         """
         This will roll the chance of a break.
         Returns: void
@@ -530,20 +533,39 @@ class OSRSFirstWc(OSRSBot):
             seconds: int
             deposit_slots: list
             self.roll_chance_passed: boolean"""
-        if runtime % 15 == 0  or self.roll_chance_passed:
+        if runtime % 15 == 0 and runtime != self.last_runtime:
             if runtime % 60 == 0 or self.roll_chance_passed:   # every minute log the chance of a break
                 self.log_msg(f"Chance of random break is {round(percentage * 100)}%")
 
-            if rd.random_chance(probability=(percentage / 4)) and self.take_breaks:
-                self.log_msg(f"Break time, last break was {minutes_since_last_break} minutes and {seconds} seconds ago. \n Chance of random break was {round(percentage * 100)}%")
+            self.roll_break(
+                percentage, minutes_since_last_break, seconds, deposit_slots
+            )
 
-                self.last_break = time.time()   # reset last break time
-                self.multiplier = 1    # reset multiplier
+        elif self.roll_chance_passed:
+            self.log_msg(f"Chance of random break is {round(percentage * 100)}%")
 
-                self.take_random_break(minutes_since_last_break, deposit_slots)
+            self.roll_break(
+                percentage, minutes_since_last_break, seconds, deposit_slots
+            )
+        self.last_runtime = runtime
 
-            self.multiplier += .25  # increase multiplier for chance of random break, we want + 1% every minute 
-            self.roll_chance_passed = False
+    # TODO Rename this here and in `roll_break`
+    def roll_break(self, percentage, minutes_since_last_break, seconds, deposit_slots):
+        if rd.random_chance(probability=(percentage / 4)) and self.take_breaks:
+            self._extracted_from_roll_break_17(
+                minutes_since_last_break, seconds, percentage, deposit_slots
+            )
+        self.multiplier += .25  # increase multiplier for chance of random break, we want + 1% every minute 
+        self.roll_chance_passed = False
+
+    # TODO Rename this here and in `roll_break`
+    def _extracted_from_roll_break_17(self, minutes_since_last_break, seconds, percentage, deposit_slots):
+        self.log_msg(f"Break time, last break was {minutes_since_last_break} minutes and {seconds} seconds ago. \n Chance of random break was {round(percentage * 100)}%")
+
+        self.last_break = time.time()   # reset last break time
+        self.multiplier = 1    # reset multiplier
+
+        self.take_random_break(minutes_since_last_break, deposit_slots)
 
     def chop_trees(self, percentage):
         """

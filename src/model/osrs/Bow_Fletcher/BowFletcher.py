@@ -22,10 +22,10 @@ class OSRSBowFletcher(OSRSBot, launcher.Launchable):
         self.take_breaks = False
         self.break_length_min = 1
         self.break_length_max = 500
-        self.time_between_actions_min =0.8
-        self.time_between_actions_max =5
+        self.time_between_actions_min =0.35
+        self.time_between_actions_max = 0.75
         self.what_to_fletch = None
-        self.mouse_speed = "medium"
+        self.mouse_speed = "fastest"
         self.break_probabilty = 0.13
 
     def create_options(self):
@@ -36,8 +36,8 @@ class OSRSBowFletcher(OSRSBot, launcher.Launchable):
         self.options_builder.add_slider_option("break_length_min", "How long to take breaks (min) (Seconds)?", 1, 300)
         self.options_builder.add_slider_option("break_length_max", "How long to take breaks (max) (Seconds)?", 2, 300)    
         self.options_builder.add_checkbox_option("mouse_speed", "Mouse Speed (must choose & only select one)",[ "slowest", "slow","medium","fast","fastest"])
-        self.options_builder.add_slider_option("time_between_actions_min", "How long to take between actions (min) (MiliSeconds)?", 600,3000)
-        self.options_builder.add_slider_option("time_between_actions_max", "How long to take between actions (max) (MiliSeconds)?", 600,3000)
+        self.options_builder.add_slider_option("time_between_actions_min", "How long to take between actions (min) (MiliSeconds)?", 350,3000)
+        self.options_builder.add_slider_option("time_between_actions_max", "How long to take between actions (max) (MiliSeconds)?", 750,3000)
         
                                                
     def save_options(self, options: dict):
