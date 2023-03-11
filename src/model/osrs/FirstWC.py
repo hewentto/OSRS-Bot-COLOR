@@ -24,7 +24,7 @@ class OSRSFirstWc(OSRSBot):
         AFK Training: Will 'Alt + Tab' to another window anytime you are woodcutting.
         Take Breaks: Will roll a chance for a break every 15 seconds, chance increases by 1% each minute."""
     def __init__(self):
-        bot_title = "No Pathing Woodcutting"
+        bot_title = "WillowsDad Woodcutting"
         description = """Chops wood and banks at supported locations."""
         super().__init__(bot_title=bot_title, description=description)
         # Set option variables below (initial value is only used during UI-less testing)
