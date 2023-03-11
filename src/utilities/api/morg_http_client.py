@@ -326,7 +326,7 @@ class MorgHTTPSocket:
                 True if the player's inventory is empty, False otherwise.
         """
         data = self.__do_get(endpoint=self.inv_endpoint)
-        return len([item["id"] for item in data if item["id"] != -1]) == 0
+        return not [item["id"] for item in data if item["id"] != -1]
 
     def get_inv_item_indices(self, item_id: Union[List[int], int]) -> list:
         """
@@ -358,7 +358,7 @@ class MorgHTTPSocket:
             return next((i for i, inventory_slot in enumerate(data) if inventory_slot["id"] == item_id), -1)
         elif isinstance(item_id, list):
             slot_list = [i for i, inventory_slot in enumerate(data) if inventory_slot["id"] != data[i - 1]["id"] and inventory_slot["id"] in item_id]
-            return slot_list if len(slot_list) > 0 else -1
+            return slot_list or -1
         
     def get_inv_item_stack_amount(self, item_id: Union[int, List[int]]) -> int:
         """

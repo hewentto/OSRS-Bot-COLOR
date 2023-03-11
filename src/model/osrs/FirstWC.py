@@ -158,7 +158,7 @@ class OSRSFirstWc(OSRSBot):
 
             elif self.afk_train and self.is_woodcutting():
 
-                self.go_afk(percentage, self.roll_chance_passed, self.breaks_skipped)
+                self.go_afk(percentage)
      
                 
             # -- End bot actions --
@@ -577,6 +577,7 @@ class OSRSFirstWc(OSRSBot):
         self.is_runelite_focused()   # check if runelite is focused
         if not self.is_focused:
             self.log_msg("We are idle but runelight is not in focus, lets wait...")
+            self.win.focus()
             return
         
         self.log_msg("Looking for a tree...")
@@ -600,7 +601,7 @@ class OSRSFirstWc(OSRSBot):
                 self.stop()
 
 
-    def go_afk(self, percentage, roll_chance_passed, breaks_skipped):
+    def go_afk(self, percentage):
         """
         This will go afk for a random amount of time.
         Returns: void
@@ -633,6 +634,7 @@ class OSRSFirstWc(OSRSBot):
                 if not self.is_runelite_focused():   
                     self.log_msg("Inventory is full but runelight is not in focus, lets wait...")
                     time.sleep(self.random_sleep_length(.8, 1.2))
+                    self.win.focus()
                     break
             self.find_bank(deposit_slots)
         else:

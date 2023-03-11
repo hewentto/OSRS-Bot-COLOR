@@ -111,19 +111,19 @@ class OSRSBowFletcher(OSRSBot, launcher.Launchable):
           
         if banks := self.get_all_tagged_in_rect(self.win.game_view, clr.CYAN):
             banks = sorted(banks, key=RuneLiteObject.distance_from_rect_center)
-            self.log_msg(f"Bank found")               
+            self.log_msg("Bank found")
             self.mouse.move_to(banks[0].random_point(),mouseSpeed=self.mouse_speed[0])
             self.mouse.click()
-            
-            
-            
+
+
+
         else:
-            self.log_msg(f"aay you moron stand near a bank tagged cyan")       
+            self.log_msg("aay you moron stand near a bank tagged cyan")       
             
     def deposit_items(self):
         Slot_to_click = self.win.inventory_slots[int(rd.fancy_normal_sample(2,27))]
         Desposit_all_img = imsearch.BOT_IMAGES.joinpath("Bow_Fletcher_bot", "deposit.png")
-        
+
         Sleep_time = rd.fancy_normal_sample(self.time_between_actions_min, self.time_between_actions_max)
 
         while True:
@@ -131,16 +131,14 @@ class OSRSBowFletcher(OSRSBot, launcher.Launchable):
             if Desposit_all:  
                 break
             time.sleep(0.1)
-           
-        self.log_msg(f"depositing all items")
-        self.mouse.move_to(Slot_to_click.random_point(),mouseSpeed=self.mouse_speed[0])#change this line to click on item in inventory
-        self.mouse.click()
-        time.sleep(Sleep_time)
+
+        self.log_msg("depositing all items")
+        self._extracted_from_withdrawl_ingrediants_14(Slot_to_click, Sleep_time)
     
     def open_up_Fletching_tab(self):
         Sleep_time = rd.fancy_normal_sample(self.time_between_actions_min, self.time_between_actions_max)
         Desposit_all_img = imsearch.BOT_IMAGES.joinpath("Bow_Fletcher_bot", "deposit.png")
-        
+
         Sleep_time = rd.fancy_normal_sample(self.time_between_actions_min, self.time_between_actions_max)
 
         while True:
@@ -149,14 +147,14 @@ class OSRSBowFletcher(OSRSBot, launcher.Launchable):
                 break
             time.sleep(0.1)
         Fletching_tab_img = imsearch.BOT_IMAGES.joinpath("Bow_Fletcher_bot", "Fletchingtab.png")
-        
+
         if Fletching_tab := imsearch.search_img_in_rect(Fletching_tab_img, self.win.game_view):
-            self.log_msg(f"clicking Fletching tab")
+            self.log_msg("clicking Fletching tab")
             self.mouse.move_to(Fletching_tab.random_point())
             self.mouse.click()
             time.sleep(Sleep_time)
         else:
-            self.log_msg(f"aaay you idiot there no Fletching tab")
+            self.log_msg("aaay you idiot there no Fletching tab")
                   
     def open_inventory(self):
         self.log_msg("Selecting inventory...")
@@ -164,10 +162,10 @@ class OSRSBowFletcher(OSRSBot, launcher.Launchable):
         self.mouse.click()
    
     def set_supplies_amount(self):
-        Sleep_time = rd.fancy_normal_sample(self.time_between_actions_min, self.time_between_actions_max) 
+        Sleep_time = rd.fancy_normal_sample(self.time_between_actions_min, self.time_between_actions_max)
         withdrawl_all_img = imsearch.BOT_IMAGES.joinpath("Bow_Fletcher_bot", "withdrawl_all.png")
         withdrawl_all_clicked_img = imsearch.BOT_IMAGES.joinpath("Bow_Fletcher_bot", "withdrawl_all_clicked.png")
-        
+
         if withdrawl_all:= imsearch.search_img_in_rect(withdrawl_all_img, self.win.game_view):
             self.mouse.move_to(withdrawl_all.random_point(),mouseSpeed=self.mouse_speed[0])
             time.sleep(Sleep_time)
@@ -176,7 +174,7 @@ class OSRSBowFletcher(OSRSBot, launcher.Launchable):
         elif withdrawl_all_clicked := imsearch.search_img_in_rect(withdrawl_all_clicked_img, self.win.game_view):
                  time.sleep(Sleep_time)
         else:
-            self.log_msg(f"Could not set withdrawl amount")
+            self.log_msg("Could not set withdrawl amount")
             self.log_msg("Finished.")
             self.stop()
           
@@ -195,90 +193,73 @@ class OSRSBowFletcher(OSRSBot, launcher.Launchable):
             ingredient1, ingredient2,ingredient3 = ingredients
         else:
             self.log_msg(f"No recipe found for {Fletch_item}")
-            self.stop()  
-        Ingrediant_one_img = imsearch.BOT_IMAGES.joinpath("Bow_Fletcher_bot", ingredient1)  
+            self.stop()
+        Ingrediant_one_img = imsearch.BOT_IMAGES.joinpath("Bow_Fletcher_bot", ingredient1)
         Ingrediant_two_img = imsearch.BOT_IMAGES.joinpath("Bow_Fletcher_bot", ingredient2)
         Ingrediant_three_img = imsearch.BOT_IMAGES.joinpath("Bow_Fletcher_bot", ingredient3)
-        
+
         Sleep_time = rd.fancy_normal_sample(self.time_between_actions_min, self.time_between_actions_max)
         if Ingrediant_one := imsearch.search_img_in_rect(Ingrediant_one_img, self.win.control_panel):
-            self.mouse.move_to(Ingrediant_one.random_point(),mouseSpeed=self.mouse_speed[0])
-            self.mouse.click()
-            time.sleep(Sleep_time)
+            self._extracted_from_Fletch_bows_14(Ingrediant_one, Sleep_time)
         else:
-            self.log_msg(f"No knife in inventory")
+            self.log_msg("No knife in inventory")
             self.stop()
-                
+
         if Ingrediant_two := imsearch.search_img_in_rect(Ingrediant_two_img, self.win.control_panel):
-            self.mouse.move_to(Ingrediant_two.random_point(),mouseSpeed=self.mouse_speed[0])
-            self.mouse.click()
-            time.sleep(Sleep_time)
+            self._extracted_from_Fletch_bows_14(Ingrediant_two, Sleep_time)
         else:
-            self.log_msg(f"Out of ingredients")
+            self.log_msg("Out of ingredients")
             self.stop()
+
+    # TODO Rename this here and in `Fletch_bows`
+    def _extracted_from_Fletch_bows_14(self, arg0, Sleep_time):
+        self._extracted_from_withdrawl_ingrediants_14(arg0, Sleep_time)
             
     def close_bank(self):
-        Sleep_time = rd.fancy_normal_sample(self.time_between_actions_min, self.time_between_actions_max)
-        Close_Bank_img = imsearch.BOT_IMAGES.joinpath("Bow_Fletcher_bot", "x.png")
-        
-        if Close_bank := imsearch.search_img_in_rect(Close_Bank_img, self.win.game_view):
-            self.mouse.move_to(Close_bank.random_point(),mouseSpeed=self.mouse_speed[0])
-            self.mouse.click()
-            time.sleep(Sleep_time)
-        else:
-            self.log_msg(f"Could not close bank")
-            self.stop()
+        self._extracted_from_withdrawl_ingrediants_2("x.png", "Could not close bank")
                
     def make_all(self):
         keywords = ["short"]
         Bow_to_make = self.what_to_fletch.lower()
         sleep_time_key = rd.fancy_normal_sample(0.067, 0.084)
         Sleep_time = rd.fancy_normal_sample(self.time_between_actions_min, self.time_between_actions_max)
-        make_all_img = imsearch.BOT_IMAGES.joinpath("Bow_Fletcher_bot", "Make_all.png")  
+        make_all_img = imsearch.BOT_IMAGES.joinpath("Bow_Fletcher_bot", "Make_all.png")
         make_all_clicked = imsearch.BOT_IMAGES.joinpath("Bow_Fletcher_bot", "Make_all_clicked.png")
-        
-        found_keyword = False
+
         print(Bow_to_make)
         print(self.what_to_fletch)
-        for keyword in keywords:
-            if keyword in Bow_to_make:
-                found_keyword = True
-                break 
+        found_keyword = any(keyword in Bow_to_make for keyword in keywords)
         if found_keyword:
             print("keyword found")
             if make_all := imsearch.search_img_in_rect(make_all_clicked, self.win.chat):
                 print("make all clicked not found")
-                time.sleep(Sleep_time)
-                pag.keyDown('2')
-                time.sleep(sleep_time_key)
-                pag.keyUp('2')
+                self._extracted_from_make_all_16(Sleep_time, '2', sleep_time_key)
             elif make_all := imsearch.search_img_in_rect(make_all_img, self.win.chat):
                 print("make all not clicked not found")
-                self.mouse.move_to(make_all.random_point(),mouseSpeed=self.mouse_speed[0])
-                self.mouse.click()
-                time.sleep(Sleep_time)
-                pag.keyDown('2')
-                time.sleep(sleep_time_key)
-                pag.keyUp('2')
+                self._extracted_from_make_all_22(make_all, Sleep_time, '2', sleep_time_key)
             else:
-                self.log_msg(f"Couldn't make all items")
+                self.log_msg("Couldn't make all items")
                 self.stop()
+        elif make_all := imsearch.search_img_in_rect(make_all_clicked, self.win.chat):
+            self._extracted_from_make_all_16(Sleep_time, '3', sleep_time_key)
+        elif make_all := imsearch.search_img_in_rect(make_all_img, self.win.chat):
+            self._extracted_from_make_all_22(make_all, Sleep_time, '3', sleep_time_key)
         else:
-            if make_all := imsearch.search_img_in_rect(make_all_clicked, self.win.chat):
-                time.sleep(Sleep_time)
-                pag.keyDown('3')
-                time.sleep(sleep_time_key)
-                pag.keyUp('3')
-            elif make_all := imsearch.search_img_in_rect(make_all_img, self.win.chat):
-                self.mouse.move_to(make_all.random_point(),mouseSpeed=self.mouse_speed[0])
-                self.mouse.click()
-                time.sleep(Sleep_time)
-                pag.keyDown('3')
-                time.sleep(sleep_time_key)
-                pag.keyUp('3')
-            else:
-                self.log_msg(f"Couldn't make all items")
-                self.stop()
+            self.log_msg("Couldn't make all items")
+            self.stop()
+
+    # TODO Rename this here and in `make_all`
+    def _extracted_from_make_all_22(self, make_all, Sleep_time, arg2, sleep_time_key):
+        self.mouse.move_to(make_all.random_point(),mouseSpeed=self.mouse_speed[0])
+        self.mouse.click()
+        self._extracted_from_make_all_16(Sleep_time, arg2, sleep_time_key)
+
+    # TODO Rename this here and in `make_all`
+    def _extracted_from_make_all_16(self, Sleep_time, arg1, sleep_time_key):
+        time.sleep(Sleep_time)
+        pag.keyDown(arg1)
+        time.sleep(sleep_time_key)
+        pag.keyUp(arg1)
                                     
     def check_inv(self,Fletch_item):
         if Fletch_item in Bow_recipes.Bow_recipes:
@@ -286,30 +267,30 @@ class OSRSBowFletcher(OSRSBot, launcher.Launchable):
             ingredient1, ingredient2,ingredient3 = ingredients
         else:
             self.log_msg(f"No recipe found for {Fletch_item}")
-            self.stop()  
-        Ingrediant_one_img = imsearch.BOT_IMAGES.joinpath("Bow_Fletcher_bot", ingredient1)  
+            self.stop()
+        Ingrediant_one_img = imsearch.BOT_IMAGES.joinpath("Bow_Fletcher_bot", ingredient1)
         Ingrediant_two_img = imsearch.BOT_IMAGES.joinpath("Bow_Fletcher_bot", ingredient2)
         Ingrediant_three_img = imsearch.BOT_IMAGES.joinpath("Bow_Fletcher_bot", ingredient3)
-        
+
         Sleep_time = rd.fancy_normal_sample(self.time_between_actions_min, self.time_between_actions_max)
         counter = 0
         finished = False
         while counter < 60 and not finished:
             while True:
-                emptyslot27 = imsearch.search_img_in_rect(Ingrediant_three_img, self.win.inventory_slots[27])
-                
-                if emptyslot27:
-                    self.log_msg(f"Finished items")
+                if emptyslot27 := imsearch.search_img_in_rect(
+                    Ingrediant_three_img, self.win.inventory_slots[27]
+                ):
+                    self.log_msg("Finished items")
                     finished = True
                     break
-                self.log_msg(f"waiting to finish items")
+                self.log_msg("waiting to finish items")
                 counter += 1
                 time.sleep(1)
         if finished:
-            self.log_msg(f"All items were made")
+            self.log_msg("All items were made")
             time.sleep(Sleep_time)
         else:
-            self.log_msg(f"failed to determine if all items were made")
+            self.log_msg("failed to determine if all items were made")
             self.stop()
     
     def withdrawl_ingrediants(self,Fletch_item):
@@ -321,15 +302,26 @@ class OSRSBowFletcher(OSRSBot, launcher.Launchable):
         else:
             self.log_msg(f"No recipe found for {Fletch_item}")
             self.stop()
-           
-        Sleep_time = rd.fancy_normal_sample(self.time_between_actions_min, self.time_between_actions_max)
-        Ingrediant_two_img = imsearch.BOT_IMAGES.joinpath("Bow_Fletcher_bot", ingredient2)  
-        
-        if Ingrediant_two := imsearch.search_img_in_rect(Ingrediant_two_img, self.win.game_view):
-            self.mouse.move_to(Ingrediant_two.random_point(),mouseSpeed=self.mouse_speed[0])
-            self.mouse.click()
-            time.sleep(Sleep_time)
+
+        self._extracted_from_withdrawl_ingrediants_2(ingredient2, "Out of ingredients")
+
+    # TODO Rename this here and in `deposit_items`, `_extracted_from_Fletch_bows_14`, `close_bank` and `withdrawl_ingrediants`
+    def _extracted_from_withdrawl_ingrediants_2(self, arg0, arg1):
+        Sleep_time = rd.fancy_normal_sample(
+            self.time_between_actions_min, self.time_between_actions_max
+        )
+        Close_Bank_img = imsearch.BOT_IMAGES.joinpath("Bow_Fletcher_bot", arg0)
+        if Close_bank := imsearch.search_img_in_rect(
+            Close_Bank_img, self.win.game_view
+        ):
+            self._extracted_from_withdrawl_ingrediants_14(Close_bank, Sleep_time)
         else:
-            self.log_msg(f"Out of ingredients")
+            self.log_msg(arg1)
             self.stop()
+
+    # TODO Rename this here and in `deposit_items`, `_extracted_from_Fletch_bows_14`, `close_bank` and `withdrawl_ingrediants`
+    def _extracted_from_withdrawl_ingrediants_14(self, arg0, Sleep_time):
+        self.mouse.move_to(arg0.random_point(), mouseSpeed=self.mouse_speed[0])
+        self.mouse.click()
+        time.sleep(Sleep_time)
             
