@@ -268,7 +268,8 @@ class OSRSFirstWc(OSRSBot):
                 self.stop()
 
         # we now exit bank by sending the escape key
-        pag.press("esc")
+        if not self.get_nearest_tag(clr.PINK) and rd.random_chance(.78):
+            pag.press("esc")
         self.random_sleep_length()
         
         return
@@ -588,9 +589,6 @@ class OSRSFirstWc(OSRSBot):
                 self.mouseover_text(contains="Chop")
                 self.mouse.click()
                 time.sleep(self.random_sleep_length())
-                    # while the bot is woodcutting, wait for the player to be idle on another window
-                if self.afk_train:
-                        self.go_afk(percentage, self.roll_chance_passed, self.breaks_skipped)
                 break
             else:
                 self.log_msg("No tree found, waiting for a tree to spawn...")
