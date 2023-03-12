@@ -576,10 +576,13 @@ class OSRSFirstWc(OSRSBot):
         """
         self.is_runelite_focused()   # check if runelite is focused
         if not self.is_focused:
-            self.log_msg("We are idle but runelight is not in focus, lets wait...")
-            self.win.focus()
+            self.log_msg("Runelite is not focused, switching window...")
+            try:
+                self.win.focus()
+            except Exception:
+                self.log_msg("Tried forcing focus, didn't work, will continue...")
             return
-        
+
         self.log_msg("Looking for a tree...")
 
         while True: 
