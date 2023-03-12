@@ -95,13 +95,13 @@ class OSRSUltraCompostMaker(OSRSBot):
 
             if len(self.api_m.get_inv_item_indices(ids.SUPERCOMPOST)) == 0:
                 self.bank(deposit_slots)
-
                 time.sleep(self.random_sleep_length() * 1.2)
+
 
             # Check if idle
             if self.api_m.get_is_player_idle():
                 self.make_compost()
-                while len(self.api_m.get_inv_item_indices(ids.ULTRACOMPOST)) != 27:
+                while len(self.api_m.get_inv_item_indices(ids.SUPERCOMPOST)) != 0:
                     time.sleep(self.random_sleep_length(1.1, 1.4))
 
 
@@ -137,6 +137,7 @@ class OSRSUltraCompostMaker(OSRSBot):
         self.loop_count = 0
         self.api_m = MorgHTTPSocket()
         self.last_runtime = 0
+        self.supercompost = 0
     
     def is_runelite_focused(self):
         """
@@ -159,13 +160,16 @@ class OSRSUltraCompostMaker(OSRSBot):
 
     def bank(self, deposit_slots):
         end_time = time.time() + 5
-        while time.time() < end_time:
-            if not self.is_runelite_focused():   
+        if not self.is_runelite_focused():   
+            while time.time() < end_time:
                 self.log_msg("Inventory is full but runelight is not in focus, lets wait...")
                 time.sleep(self.random_sleep_length(.8, 1.2))
                 self.win.focus()
                 break
-            self.find_bank(deposit_slots)
+        self.find_bank(deposit_slots)
+        self.bank_each_item(deposit_slots)
+        self.withdraw_ingredients()
+        pag.press("esc")
     
     
     def random_sleep_length(self, delay_min=0, delay_max=0):
@@ -217,11 +221,7 @@ class OSRSUltraCompostMaker(OSRSBot):
             if time.time() - wait_time > 15:
                 self.log_msg("We clicked on the bank but player is not idle after 10 seconds, something is wrong, quitting bot.")
                 self.stop()
-            time.sleep(self.random_sleep_length(.8, 1.3))
-            
-        # if bank is open, deposit all 
-        self.bank_each_item(deposit_slots)
-
+            time.sleep(self.random_sleep_length(.8, 1.3))           
         return
     
 
@@ -255,8 +255,6 @@ class OSRSUltraCompostMaker(OSRSBot):
         Returns:
             None/Void
         """
-        try_count = 0
-
         # Make sure bank is open
         if not self.is_bank_open():
             self.log_msg("Bank is not open, cannot deposit items. Quitting bot...")
@@ -264,6 +262,8 @@ class OSRSUltraCompostMaker(OSRSBot):
 
         # move mouse each slot and click to deposit all
         if slot_list != -1:
+            try_count = 0
+
             for slot in slot_list:
                 self.mouse.move_to(self.win.inventory_slots[slot].random_point())
                 time.sleep(self.random_sleep_length(.8, 1.3))
@@ -276,14 +276,8 @@ class OSRSUltraCompostMaker(OSRSBot):
                 if try_count > 5:
                     self.log_msg(f"Tried to deposit {try_count} times, quitting bot so you can fix it...")
                     self.stop()
-
-        # we now exit bank by sending the escape key
-
-        self.withdraw_ingredients()
-
-        pag.press("esc")
         self.random_sleep_length()
-        
+
         return
     
 
@@ -312,17 +306,17 @@ class OSRSUltraCompostMaker(OSRSBot):
 
 
         time_looking_for_supercompost = time.time() + 5        
-        while time.time() < time_looking_for_supercompost:
+        while time.time() < time_looking_for_supercompost and self.supercompost == 0:
         # try several times to find it
-            supercompost = imsearch.search_img_in_rect(Supercompost_img, self.win.game_view)
-            if supercompost:
+            self.supercompost = imsearch.search_img_in_rect(Supercompost_img, self.win.game_view)
+            if self.supercompost:
                 break
-        if not supercompost:
+        if not self.supercompost:
             self.log_msg("Could not find supercompost in bank, quitting bot...")
             self.stop()
 
         time.sleep(self.random_sleep_length())
-        self.click_in_bank(supercompost)
+        self.click_in_bank(self.supercompost)
 
     # TODO Rename this here and in `withdraw_ingredients`
     def click_in_bank(self, item, amount=1):
