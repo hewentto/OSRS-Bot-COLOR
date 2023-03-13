@@ -2,4 +2,4 @@ from .combat.combat import OSRSCombat
 from .woodcutter import OSRSWoodcutter
 from .WDWoodcutting import OSRSWDWoodcutter
 from .Bow_Fletcher.BowFletcher import OSRSBowFletcher
-from .UltraCompost import OSRSUltraCompostMaker
+from .WDUltraCompost import OSRSWDUltraCompost

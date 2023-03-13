@@ -12,7 +12,7 @@ import utilities.imagesearch as imsearch
 
 
 
-class OSRSUltraCompostMaker(OSRSBot):
+class OSRSWDUltraCompostMaker(OSRSBot):
     def __init__(self):
         bot_title = "WillowsDad Ultra Compost Maker"
         description = "Place this near a bank with ingredients and it will make ultra compost for you."
