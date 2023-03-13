@@ -13,7 +13,7 @@ import pyautogui as pag
 import threading
 
 
-class OSRSFirstWc(OSRSBot):
+class OSRSWDWoodcutting(OSRSBot):
     """This bot will cut trees and bank the logs if the bank is tagged and within render distance.
     Assumes: 
         Axe is equipped, or in inventory
