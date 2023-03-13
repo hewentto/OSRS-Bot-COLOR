@@ -155,7 +155,8 @@ class OSRSWDWoodcutting(OSRSBot):
      
                 
             # -- End bot actions --
-            self.check_break(runtime, percentage, minutes_since_last_break, seconds, deposit_slots)
+            if self.take_breaks:
+                self.check_break(runtime, percentage, minutes_since_last_break, seconds, deposit_slots)
             current_progress = round((time.time() - self.start_time) / self.end_time, 2)
             if current_progress != round(self.last_progress, 2):
                 self.update_progress((time.time() - self.start_time) / self.end_time)

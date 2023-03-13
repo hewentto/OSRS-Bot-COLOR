@@ -9,7 +9,7 @@ from utilities.api.morg_http_client import MorgHTTPSocket
 from utilities.api.status_socket import StatusSocket
 import pyautogui as pag
 import utilities.imagesearch as imsearch
-
+import random
 
 
 class OSRSWDUltraCompostMaker(OSRSBot):
@@ -107,6 +107,8 @@ class OSRSWDUltraCompostMaker(OSRSBot):
 
             # -- End bot actions --
             # self.check_break(runtime, percentage, minutes_since_last_break, seconds, deposit_slots)
+            if self.take_breaks:
+                self.check_break(runtime, percentage, minutes_since_last_break, seconds, deposit_slots)
             current_progress = round((time.time() - self.start_time) / self.end_time, 2)
             if current_progress != round(self.last_progress, 2):
                 self.update_progress((time.time() - self.start_time) / self.end_time)
@@ -355,3 +357,119 @@ class OSRSWDUltraCompostMaker(OSRSBot):
         # hit space to make compost
         time.sleep(self.random_sleep_length())
         pag.press("space")
+
+    def check_break(self, runtime, percentage, minutes_since_last_break, seconds, deposit_slots):
+        """
+        This will roll the chance of a break.
+        Returns: void
+        Args:
+            runtime: int
+            percentage: float
+            minutes_since_last_break: int
+            seconds: int
+            deposit_slots: list
+            self.roll_chance_passed: boolean"""
+        if runtime % 15 == 0 and runtime != self.last_runtime:
+            if runtime % 60 == 0 or self.roll_chance_passed:   # every minute log the chance of a break
+                self.log_msg(f"Chance of random break is {round(percentage * 100)}%")
+
+            self.roll_break(
+                percentage, minutes_since_last_break, seconds, deposit_slots
+            )
+
+        elif self.roll_chance_passed:
+            self.log_msg(f"Chance of random break is {round(percentage * 100)}%")
+
+            self.roll_break(
+                percentage, minutes_since_last_break, seconds, deposit_slots
+            )
+        self.last_runtime = runtime
+
+    def roll_break(self, percentage, minutes_since_last_break, seconds, deposit_slots):
+        if (
+            rd.random_chance(probability=percentage / (1 if self.afk_train else 4))   # when afk theres weird timing issues so we divide by 4 if not afk
+            and self.take_breaks
+        ):
+            self.reset_timer(
+                minutes_since_last_break, seconds, percentage, deposit_slots
+            )
+        self.multiplier += .25  # increase multiplier for chance of random break, we want + 1% every minute 
+        self.roll_chance_passed = False
+
+    def reset_timer(self, minutes_since_last_break, seconds, percentage, deposit_slots):
+        self.log_msg(f"Break time, last break was {minutes_since_last_break} minutes and {seconds} seconds ago. \n Chance of random break was {round(percentage * 100)}%")
+
+        self.last_break = time.time()   # reset last break time
+        self.multiplier = 1    # reset multiplier
+
+        self.take_random_break(minutes_since_last_break, deposit_slots)
+
+    def take_random_break(self, minutes_since_last_break, deposit_slots):
+        """This will randomly choose a break type and take it. The shorter time since last break, the more likely it is to be a menu break.
+        Returns: void
+        Args: minutes_since_last_break (int) - the number of minutes passed since the last break."""
+        # break type is a random choice from list
+        break_type = random.choice(["menu", "break"])
+
+        if break_type == "menu":
+            self.log_msg("Taking a menu break...")
+            self.take_menu_break()
+
+        if break_type == "break":
+            self.log_msg("Taking a break...")
+
+            # check if player is idle
+            while not self.api_m.get_is_player_idle():
+                self.log_msg("Player is not idle, waiting for player to be idle before taking break...")
+                time.sleep(self.random_sleep_length(3,8))
+
+            if minutes_since_last_break > 15:
+                self.take_break(15, 120)
+            else:
+                self.take_break()
+
+    def take_menu_break(self):  # sourcery skip: extract-duplicate-method
+        """
+        This will take a random menu break [Skills, Combat].]
+        Returns: void
+        Args: None
+        """
+        # random amount of seconds to teak a break
+        break_time = random.uniform(1, 15)
+
+        if rd.random_chance(.7):
+            self.log_msg("Taking a Sklls Tab break...")
+            self.mouse.move_to(self.win.cp_tabs[1].random_point())
+            time.sleep(self.random_sleep_length())
+            if self.mouseover_text(contains="Skills"):
+                self.mouse.click()
+                self.mouse.move_to(self.win.control_panel.random_point())
+                time.sleep(break_time)
+
+                # go back to inventory
+                self.mouse.move_to(self.win.cp_tabs[3].random_point())
+                time.sleep(self.random_sleep_length())
+                if self.mouseover_text(contains="Inventory"):
+                    self.mouse.click()
+            else:
+                self.log_msg("Skills tab not found, break function didn't work...")
+                self.stop()
+        else:
+            self.log_msg("Taking an Equipment menu break...")
+            self.mouse.move_to(self.win.cp_tabs[4].random_point())
+            time.sleep(self.random_sleep_length())
+            if self.mouseover_text(contains="Worn"):
+                self.mouse.click()
+
+                self.mouse.move_to(self.win.control_panel.random_point())
+                time.sleep(break_time)
+
+                # go back to inventory
+                self.mouse.move_to(self.win.cp_tabs[3].random_point())
+                if self.mouseover_text(contains="Inventory"):
+                    self.mouse.click()
+
+            else:
+                self.log_msg("Combat tab not found, break function didn't work...")
+                self.stop()
+        return
