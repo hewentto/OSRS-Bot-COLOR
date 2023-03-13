@@ -102,9 +102,10 @@ class OSRSFirstWc(OSRSBot):
         self.log_msg("Options set successfully.")
         self.options_set = True
 
-    # threading class with stop function
+ 
     class StoppableThread(threading.Thread):
-        """Thread class with a stop() method. The thread itself has to check"""
+        """Thread class with a stop() method. The thread itself has to check.
+            Useful for looking for a tag while main thread is doing something else."""
         def __init__(self, target=None, args=()):
             super().__init__(target=target, args=args)
             self._stop_event = threading.Event()
@@ -118,15 +119,7 @@ class OSRSFirstWc(OSRSBot):
 
     def main_loop(self):
         """
-        When implementing this function, you have the following responsibilities:
-        1. If you need to halt the bot from within this function, call `self.stop()`. You'll want to do this
-           when the bot has made a mistake, gets stuck, or a condition is met that requires the bot to stop.
-        2. Frequently call self.update_progress() and self.log_msg() to send information to the UI.
-        3. At the end of the main loop, make sure to set the status to STOPPED.
-
-        Additional notes:
-        Make use of Bot/RuneLiteBot member functions. There are many functions to simplify various actions.
-        Visit the Wiki for more.
+        Main bot loop. We call setup() to set up the bot, then loop until the end time is reached.
         """
         # Setup variables
         self.setup()
@@ -156,7 +149,7 @@ class OSRSFirstWc(OSRSBot):
 
                 self.chop_trees(percentage)
 
-            elif self.afk_train and self.is_woodcutting():
+            if self.afk_train and self.is_woodcutting():
 
                 self.go_afk(percentage)
      
@@ -175,6 +168,8 @@ class OSRSFirstWc(OSRSBot):
 
     def setup(self):
         """Sets up loop variables, checks for required items, and checks location.
+            This will ideally stop the bot from running if it's not setup correctly.
+            * To-do: Add functions to check for required items, bank setup and locaiton.
             Args:
                 None
             Returns:
@@ -199,12 +194,17 @@ class OSRSFirstWc(OSRSBot):
             self.check_axe()
         
 
-        # if not self.get_nearest_tag(clr.YELLOW) and not self.power_chopping:
-        #     self.log_msg("Bank booths should be tagged with yellow, and in screen view. Please fix this.")
-        #     self.stop()
+        if not self.get_nearest_tag(clr.YELLOW) and not self.power_chopping:
+            found = self.adjust_camera(clr.YELLOW)
+            if not found:
+                self.log_msg("Bank booths should be tagged with yellow, and in screen view. Please fix this.")
+                self.stop()
+
         if not self.get_nearest_tag(clr.PINK):
-            self.log_msg("Trees should be tagged with pink, and in screen view. Please fix this.")
-            self.stop()
+            found = self.adjust_camera(clr.PINK)
+            if not found:
+                self.log_msg("Trees should be tagged with pink, and in screen view. Please fix this.")
+                self.stop()
 
 
     def activate_special(self):
@@ -218,22 +218,21 @@ class OSRSFirstWc(OSRSBot):
         self.mouse.click()
         time.sleep(self.random_sleep_length())
 
+
     def pick_up_nests(self):
 
-        api_s = StatusSocket()
-        api_m = MorgHTTPSocket()
-
-        if api_m.get_is_inv_full():
+        if self.api_m.get_is_inv_full():
             return
         """Picks up loot while there is loot on the ground"""
         while self.pick_up_loot(["Bird nest", "Clue nest (easy)", "Clue nest (medium)","Clue nest (hard)","Clue nest (elite)"]):
-            curr_inv = len(api_s.get_inv())
+            curr_inv = len(self.api_s.get_inv())
             self.log_msg("Picking up loot...")
             for _ in range(5):  # give the bot 5 seconds to pick up the loot
-                if len(api_s.get_inv()) != curr_inv:
+                if len(self.api_s.get_inv()) != curr_inv:
                     time.sleep(self.random_sleep_length())
                     break
                 time.sleep(self.random_sleep_length(.8, 1.3))
+
 
     def bank_each_item(self, slot_list):
         """
@@ -274,7 +273,8 @@ class OSRSFirstWc(OSRSBot):
         
         return
     
-    # ensure bank is open
+
+
     def is_bank_open(self):
         """Makes sure bank is open, if not, opens it
         Returns:
@@ -290,7 +290,7 @@ class OSRSFirstWc(OSRSBot):
             time.sleep(.1)
         return False
     
-    # randomized sleep lengh function returns a random float between min and max
+
     def random_sleep_length(self, delay_min=0, delay_max=0):
         """Returns a random float between min and max"""
         if delay_min == 0:
@@ -298,6 +298,7 @@ class OSRSFirstWc(OSRSBot):
         if delay_max == 0:
             delay_max = self.delay_max
         return rd.fancy_normal_sample(delay_min, delay_max)
+
 
     def adjust_camera(self, color, timeout=4):
         """
@@ -316,7 +317,7 @@ class OSRSFirstWc(OSRSBot):
 
         # call the camera function on a new thread
         camera_thread = self.StoppableThread(target=self.move_camera, args=(random_xy))
-        camera_thread.start()
+        camera_thread.start()   
 
         while not self.get_nearest_tag(color):
             time_searching = time.time() - start_time
@@ -324,12 +325,13 @@ class OSRSFirstWc(OSRSBot):
             if time_searching > timeout:
                 self.log_msg(f"Could not find highlighted color in {timeout} seconds...")
                 camera_thread.stop()    
-                return None
+                return False
             time.sleep(self.random_sleep_length(.35, .65))
         camera_thread.stop()
         time.sleep(self.random_sleep_length())
+        return True
             
-    # Function to usually choose first bank but sometimes choose second bank
+
     def choose_bank(self):
         """
         Has a small chance to choose the second closest bank to the player.
@@ -348,6 +350,7 @@ class OSRSFirstWc(OSRSBot):
             self.log_msg("No banks found, trying to adjust camera...")
             self.adjust_camera(clr.YELLOW)
             return (self.choose_bank())
+
 
     def take_menu_break(self):  # sourcery skip: extract-duplicate-method
         """
@@ -395,6 +398,7 @@ class OSRSFirstWc(OSRSBot):
                 self.stop()
         return
     
+
     def take_random_break(self, minutes_since_last_break, deposit_slots):
         """This will randomly choose a break type and take it. The shorter time since last break, the more likely it is to be a menu break.
         Returns: void
@@ -418,6 +422,7 @@ class OSRSFirstWc(OSRSBot):
                 self.take_break(15, 120)
             else:
                 self.take_break()
+
 
     def find_bank(self, deposit_slots):
         """
@@ -466,6 +471,7 @@ class OSRSFirstWc(OSRSBot):
 
         return
 
+
     def is_runelite_focused(self):
         """
         This will check if the runelite window is focused.
@@ -484,6 +490,7 @@ class OSRSFirstWc(OSRSBot):
         else:
             self.is_focused = False
             return False
+
 
     def switch_window(self):
         """
@@ -509,6 +516,7 @@ class OSRSFirstWc(OSRSBot):
 
         time.sleep(self.random_sleep_length())
 
+
     def is_woodcutting(self):
         """
         This will check if the player is currently woodcutting.
@@ -523,6 +531,7 @@ class OSRSFirstWc(OSRSBot):
         # check if the current animation is woodcutting
         return current_animation in woodcutting_animation_list
         
+
     def check_break(self, runtime, percentage, minutes_since_last_break, seconds, deposit_slots):
         """
         This will roll the chance of a break.
@@ -550,23 +559,29 @@ class OSRSFirstWc(OSRSBot):
             )
         self.last_runtime = runtime
 
-    # TODO Rename this here and in `roll_break`
+
+
     def roll_break(self, percentage, minutes_since_last_break, seconds, deposit_slots):
-        if rd.random_chance(probability=(percentage / 4)) and self.take_breaks:
-            self._extracted_from_roll_break_17(
+        if (
+            rd.random_chance(probability=percentage / (1 if self.afk_train else 4))   # when afk theres weird timing issues so we divide by 4 if not afk
+            and self.take_breaks
+        ):
+            self.reset_timer(
                 minutes_since_last_break, seconds, percentage, deposit_slots
             )
         self.multiplier += .25  # increase multiplier for chance of random break, we want + 1% every minute 
         self.roll_chance_passed = False
 
-    # TODO Rename this here and in `roll_break`
-    def _extracted_from_roll_break_17(self, minutes_since_last_break, seconds, percentage, deposit_slots):
+
+
+    def reset_timer(self, minutes_since_last_break, seconds, percentage, deposit_slots):
         self.log_msg(f"Break time, last break was {minutes_since_last_break} minutes and {seconds} seconds ago. \n Chance of random break was {round(percentage * 100)}%")
 
         self.last_break = time.time()   # reset last break time
         self.multiplier = 1    # reset multiplier
 
         self.take_random_break(minutes_since_last_break, deposit_slots)
+
 
     def chop_trees(self, percentage):
         """
@@ -604,6 +619,7 @@ class OSRSFirstWc(OSRSBot):
                 self.stop()
 
 
+
     def go_afk(self, percentage):
         """
         This will go afk for a random amount of time.
@@ -622,13 +638,13 @@ class OSRSFirstWc(OSRSBot):
             time.sleep(self.random_sleep_length())
             chopping_time = int(time.time() - afk__start_time)
             self.is_runelite_focused()
-
-        self.breaks_skipped = chopping_time // 15
+            self.breaks_skipped = chopping_time // 15
 
         if self.breaks_skipped > 0:
             self.roll_chance_passed = True
             self.multiplier += self.breaks_skipped * .25
             self.log_msg(f"Skipped {self.breaks_skipped} break rolls while afk, percentage chance is now {round(percentage * 100)}%")
+
 
     def bank_or_drop(self, deposit_slots):
         if not self.power_chopping:
@@ -643,6 +659,7 @@ class OSRSFirstWc(OSRSBot):
         else:
             self.log_msg("Inventory is full, dropping everything...")
             self.drop_all()
+
 
     def check_axe(self):
         """
