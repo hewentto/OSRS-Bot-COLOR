@@ -329,7 +329,7 @@ class OSRSWDWoodcutting(OSRSBot):
                 return False
             time.sleep(self.random_sleep_length(.35, .65))
         camera_thread.stop()
-        time.sleep(self.random_sleep_length())
+        time.sleep(self.random_sleep_length(.6,.9))
         return True
             
 
@@ -449,7 +449,7 @@ class OSRSWDWoodcutting(OSRSBot):
         while not self.mouseover_text(contains="Bank"):
             self.log_msg(f"Bank not found, trying again. Try #{search_tries}.")
             self.mouse.move_to(bank.random_point())
-            time.sleep(self.random_sleep_length())
+            time.sleep(self.random_sleep_length(1,1.9))
 
             if search_tries > 5:
                 self.log_msg(f"Did not see 'Bank' in mouseover text after {search_tries} searches, quitting bot so you can fix it...")
