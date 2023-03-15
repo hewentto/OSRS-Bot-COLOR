@@ -51,7 +51,7 @@ class OSRSWDWoodcutting(OSRSBot):
         self.options_builder.add_checkbox_option("power_chopping", "Power Chopping? Drops everything in inventory.", [" "])
         self.options_builder.add_checkbox_option("dragon_special", "Use Dragon Axe Special?", [" "])
         self.options_builder.add_slider_option("delay_min", "How long to take between actions (min) (MiliSeconds)?", 300,3000)
-        self.options_builder.add_slider_option("delay_max", "How long to take between actions (max) (MiliSeconds)?", 650,3000)
+        self.options_builder.add_slider_option("delay_max", "How long to take between actions (max) (MiliSeconds)?", 350,3000)
 
     def save_options(self, options: dict):
         """
