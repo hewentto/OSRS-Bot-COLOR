@@ -191,10 +191,9 @@ class OSRSWDWoodcutting(OSRSBot):
         self.spec_energy = self.get_special_energy()
         self.last_runtime = 0
 
-        if self.dragon_special:
-            self.check_axe()
         
-
+        # Setup Checks for axes and tagged objects
+        self.check_axe()
         if not self.get_nearest_tag(clr.YELLOW) and not self.power_chopping:
             found = self.adjust_camera(clr.YELLOW)
             if not found:
