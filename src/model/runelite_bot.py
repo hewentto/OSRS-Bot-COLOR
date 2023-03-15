@@ -147,7 +147,7 @@ class RuneLiteBot(Bot, metaclass=ABCMeta):
                 ocr.BOLD_12,
                 [clr.WHITE, clr.PURPLE, clr.ORANGE],
             ):
-                self.mouse.move_to(take_text[0].random_point(), mouseSpeed="medium")
+                self.mouse.move_to(take_text[0].random_point(), mouseSpeed="fastest")
                 self.mouse.click()
                 return True
             else:
