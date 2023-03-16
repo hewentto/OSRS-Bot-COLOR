@@ -130,7 +130,7 @@ class OSRSWDWoodcutting(OSRSBot):
             minutes_since_last_break = int((time.time() - self.last_break) / 60)
             seconds = int(time.time() - self.last_break) % 60
             percentage = (self.multiplier * .01)  # this is the percentage chance of a break
-            deposit_slots = self.api_m.get_inv_item_index(self.deposit_ids)
+            deposit_slots = self.api_m.get_inv_item_first_indice(self.deposit_ids)
             self.roll_chance_passed = False
             self.spec_energy = self.get_special_energy()
 
@@ -407,7 +407,6 @@ class OSRSWDWoodcutting(OSRSBot):
         break_type = random.choice(["menu", "break"])
 
         if break_type == "menu":
-            self.log_msg("Taking a menu break...")
             self.take_menu_break()
 
         if break_type == "break":
