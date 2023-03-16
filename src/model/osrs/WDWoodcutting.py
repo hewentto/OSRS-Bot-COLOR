@@ -408,7 +408,6 @@ class OSRSWDWoodcutting(OSRSBot):
         break_type = random.choice(["menu", "break"])
 
         if break_type == "menu":
-            self.log_msg("Taking a menu break...")
             self.take_menu_break()
 
         if break_type == "break":
