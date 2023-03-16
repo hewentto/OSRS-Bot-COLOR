@@ -51,7 +51,7 @@ class OSRSWDWoodcutting(OSRSBot):
         self.options_builder.add_checkbox_option("power_chopping", "Power Chopping? Drops everything in inventory.", [" "])
         self.options_builder.add_checkbox_option("dragon_special", "Use Dragon Axe Special?", [" "])
         self.options_builder.add_slider_option("delay_min", "How long to take between actions (min) (MiliSeconds)?", 300,3000)
-        self.options_builder.add_slider_option("delay_max", "How long to take between actions (max) (MiliSeconds)?", 650,3000)
+        self.options_builder.add_slider_option("delay_max", "How long to take between actions (max) (MiliSeconds)?", 350,3000)
 
     def save_options(self, options: dict):
         """
@@ -191,10 +191,9 @@ class OSRSWDWoodcutting(OSRSBot):
         self.spec_energy = self.get_special_energy()
         self.last_runtime = 0
 
-        if self.dragon_special:
-            self.check_axe()
         
-
+        # Setup Checks for axes and tagged objects
+        self.check_axe()
         if not self.get_nearest_tag(clr.YELLOW) and not self.power_chopping:
             found = self.adjust_camera(clr.YELLOW)
             if not found:
@@ -329,7 +328,7 @@ class OSRSWDWoodcutting(OSRSBot):
                 return False
             time.sleep(self.random_sleep_length(.35, .65))
         camera_thread.stop()
-        time.sleep(self.random_sleep_length())
+        time.sleep(self.random_sleep_length(.6,.9))
         return True
             
 
@@ -448,7 +447,7 @@ class OSRSWDWoodcutting(OSRSBot):
         while not self.mouseover_text(contains="Bank"):
             self.log_msg(f"Bank not found, trying again. Try #{search_tries}.")
             self.mouse.move_to(bank.random_point())
-            time.sleep(self.random_sleep_length())
+            time.sleep(self.random_sleep_length(1,1.9))
 
             if search_tries > 5:
                 self.log_msg(f"Did not see 'Bank' in mouseover text after {search_tries} searches, quitting bot so you can fix it...")
@@ -667,6 +666,13 @@ class OSRSWDWoodcutting(OSRSBot):
         Returns: none
         Args: None
         """
-        if not self.api_m.get_is_item_equipped(ids.DRAGON_AXE):
+        axe_ids = [ids.BRONZE_AXE, ids.IRON_AXE, ids.STEEL_AXE, ids.BLACK_AXE, ids.MITHRIL_AXE, ids.ADAMANT_AXE, ids.RUNE_AXE, ids.DRAGON_AXE, ids.INFERNAL_AXE, ids.DRAGON_PICKAXE, ids.CRYSTAL_AXE]
+
+        if not self.api_m.get_is_item_equipped(ids.DRAGON_AXE) and self.dragon_special:
             self.log_msg("You need dragon axe equipped according to your settings, quitting bot.")
             self.stop()
+        time.sleep(self.random_sleep_length())
+        if not self.api_m.get_is_item_equipped(axe_ids) and self.api_m.get_if_item_in_inv(axe_ids):
+            self.log_msg("No axe in inventory, or equipped. Please get an axe and start script again")
+            self.stop()
+        
