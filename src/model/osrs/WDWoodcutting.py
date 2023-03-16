@@ -266,7 +266,7 @@ class OSRSWDWoodcutting(OSRSBot):
                 self.log_msg(f"Tried to deposit {try_count} times, quitting bot so you can fix it...")
                 self.stop()
 
-        # we now exit bank by sending the escape key
+        # we now exit bank by sending the escape key or skipping because a tree is in view and clickable
         if not self.get_nearest_tag(clr.PINK) and rd.random_chance(.78):
             pag.press("esc")
         self.random_sleep_length()
