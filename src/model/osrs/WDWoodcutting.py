@@ -672,7 +672,9 @@ class OSRSWDWoodcutting(OSRSBot):
             self.log_msg("You need dragon axe equipped according to your settings, quitting bot.")
             self.stop()
         time.sleep(self.random_sleep_length())
-        if not self.api_m.get_is_item_equipped(axe_ids) and self.api_m.get_if_item_in_inv(axe_ids):
+        if not self.api_m.get_is_item_equipped(
+            axe_ids
+        ) and not self.api_m.get_if_item_in_inv(axe_ids):
             self.log_msg("No axe in inventory, or equipped. Please get an axe and start script again")
             self.stop()
         
