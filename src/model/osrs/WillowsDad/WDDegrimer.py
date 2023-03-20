@@ -59,7 +59,7 @@ class OSRSWDDegrimer(OSRSBot):
                 if options[option] == "Guam":
                     self.withdraw_ids = ids.GRIMY_GUAM_LEAF
                     self.deposit_ids = ids.GUAM_LEAF
-                    self.herb_img = imsearch.BOT_IMAGES.joinpath("bank", f"Grimy_{options[option].lower()}.png")
+                    self.herb_img = imsearch.BOT_IMAGES.joinpath("WillowsDad\\images\\", f"Grimy_{options[option].lower()}.png")
                 elif options[option] == "Marrentill":
                     self.withdraw_ids = ids.GRIMY_MARRENTILL
                     self.deposit_ids = ids.MARRENTILL
