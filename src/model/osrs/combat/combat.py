@@ -110,7 +110,7 @@ class OSRSCombat(OSRSBot, launcher.Launchable):
                 return
 
             # While not in combat
-            while not api_morg.get_is_in_combat():
+            while api_morg.get_is_player_idle():
                 # Find a target
                 target = self.get_nearest_tagged_NPC()
                 if target is None:
@@ -133,7 +133,7 @@ class OSRSCombat(OSRSBot, launcher.Launchable):
                 time.sleep(1)
 
             # While in combat
-            while api_morg.get_is_in_combat():
+            while not api_morg.get_is_player_idle():
                 # Check to eat food
                 if self.get_hp() < self.hp_threshold:
                     self.__eat(api_status)

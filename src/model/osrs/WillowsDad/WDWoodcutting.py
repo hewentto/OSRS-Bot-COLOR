@@ -188,6 +188,7 @@ class OSRSWDWoodcutting(OSRSBot):
         self.multiplier = 1
         self.loop_count = 0
         self.api_m = MorgHTTPSocket()
+        self.api_s = StatusSocket()
         self.spec_energy = self.get_special_energy()
         self.last_runtime = 0
 
@@ -282,7 +283,7 @@ class OSRSWDWoodcutting(OSRSBot):
         Args:
             None"""
         Desposit_all_img = imsearch.BOT_IMAGES.joinpath("bank", "bank_all.png")
-        end_time = time.time() + self.random_sleep_length()
+        end_time = time.time() + 3
 
         while (time.time() < end_time):
             if deposit_btn := imsearch.search_img_in_rect(Desposit_all_img, self.win.game_view):
