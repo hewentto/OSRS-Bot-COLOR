@@ -9,7 +9,7 @@ from pynput import keyboard
 
 import utilities.settings as settings
 from controller.bot_controller import BotController, MockBotController
-from model import Bot, RuneLiteBot
+from model import Bot, RuneLiteBot, WillowsDadBot
 from utilities.game_launcher import Launchable
 from view import *
 
@@ -108,7 +108,7 @@ class App(customtkinter.CTk):
         names = dir(module)
         for name in names:
             obj = getattr(module, name)
-            if obj is not Bot and obj is not RuneLiteBot and isinstance(obj, type) and issubclass(obj, Bot):
+            if obj is not Bot and obj is not RuneLiteBot and obj is not WillowsDadBot and isinstance(obj, type) and issubclass(obj, Bot):
                 instance = obj()
                 # Make a home view if one doesn't exist
                 if isinstance(instance, RuneLiteBot) and instance.game_title not in self.views:
