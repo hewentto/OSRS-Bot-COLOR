@@ -167,6 +167,7 @@ class OSRSWDWoodcutting(WillowsDadBot):
             Returns:
                 None"""
         self.open_bank()
+        self.close_bank()
 
 
     def pick_up_nests(self):

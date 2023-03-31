@@ -27,7 +27,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
 
 
     def create_options(self):
-        self.options_builder.add_slider_option("running_time", "How long to run (minutes)?", 1, 500)
+        self.options_builder.add_slider_option("running_time", "How long to run (minutes)?", 1, 360)
         self.options_builder.add_checkbox_option("afk_train", "Train like you're afk on another tab?", [" "])
         self.options_builder.add_checkbox_option("take_breaks", "Take breaks?", [" "])
         self.options_builder.add_slider_option("delay_min", "How long to take between actions (min) (MiliSeconds)?", 300,3000)
@@ -314,9 +314,9 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         self.mouse.click()
 
         wait_time = time.time()
-        while not self.api_m.get_is_player_idle():
+        while not self.is_bank_open():
             # if we waited for 10 seconds, break out of loop
-            if time.time() - wait_time > 15:
+            if time.time() - wait_time > 20:
                 self.log_msg("We clicked on the bank but player is not idle after 10 seconds, something is wrong, quitting bot.")
                 self.stop()
             time.sleep(self.random_sleep_length(.8, 1.3))
@@ -480,14 +480,6 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         
         if slot_list == 0:   # if theres only one item, it is the first slot
             slot_list = [0]
-
-        # Make sure bank is open
-        if not self.is_bank_open():
-            self.log_msg("Bank is not open, openning bank again...")
-            self.open_bank()
-            if not self.is_bank_open():
-                self.log_msg("Bank is still not open, quitting bot...")
-                self.stop()
 
         # move mouse each slot and click to deposit all
         for slot in slot_list:
