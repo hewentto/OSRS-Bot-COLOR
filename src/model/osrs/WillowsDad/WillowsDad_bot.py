@@ -85,6 +85,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         self.api_s = StatusSocket()
         self.spec_energy = self.get_special_energy()
         self.last_runtime = 0
+        self.safety_squares = self.get_all_tagged_in_rect(self.win.game_view ,clr.CYAN)
 
 
     def is_runelite_focused(self):
@@ -307,9 +308,8 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
 
         # move mouse to bank and click
         self.mouse.move_to(bank.random_point())
-        time.sleep(self.random_sleep_length(.8, 1.2))
 
-        self.check_text(bank, "Use", [clr.WHITE, clr.OFF_WHITE])
+        self.check_text(bank, ["Bank", "Deposit"], [clr.WHITE, clr.OFF_WHITE, clr.CYAN])
 
         self.mouse.click()
 
@@ -325,25 +325,29 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
 
     def check_text(self, object: RuneLiteObject, text, color):
         """
-        calls mousover text in a loop
+        calls mouseover text in a loop
         Returns: void
         Args: None
         """
+        if not isinstance(text, list):
+            text = [text]
+
         time_searching = time.time()
         search_tries = 1
 
-        while not self.mouseover_text(
-            contains=text, color=color
-        ):
+        while all(txt not in self.mouseover_text() for txt in text):
             time.sleep(self.random_sleep_length(.1, .2))
 
-            if time.time() - time_searching  > 2:
+            if time.time() - time_searching > 2:
                 self.mouse.move_to(object.random_point())
-            
-            if time.time() - time_searching  > 4:
-                self.log_msg(f"Did not see {text} in mouseover text after {search_tries} searches, quitting bot so you can fix it...")
+
+            if time.time() - time_searching > 4:
+                msg = f"Did not see any of {text} in mouseover text after {search_tries} searches, quitting bot so you can fix it..."
+                self.log_msg(msg)
                 self.stop()
+
             search_tries += 1
+
 
     def choose_bank(self):
         """
@@ -361,8 +365,39 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
                 return banks[0] if rd.random_chance(.74) else banks[1]
         else:
             self.log_msg("No banks found, trying to adjust camera...")
-            self.adjust_camera(clr.YELLOW)
+            if not self.adjust_camera(clr.YELLOW):
+                self.log_msg("No banks found, quitting bot...")
+                self.stop()
             return (self.choose_bank())
+    
+
+    def choose_safety_square(self):
+        """
+        Choose one of the safe squares to click
+        Returns: Rect object
+        Args: None
+        """
+        if self.safety_squares:
+            return random.choice(self.safety_squares)
+        
+        self.log_msg("No Cyan safety squares found, trying to adjust camera...")
+        return
+        
+
+    def go_to_safety_square(self):
+        """
+        Go to a safety square to search for next object to click
+        Returns: void
+        Args: None
+        """
+        if safety_square := self.choose_safety_square():
+            self.mouse.move_to(safety_square.random_point())
+            self.mouse.click()
+            # wait till idle
+            while not self.api_m.get_is_player_idle():
+                time.sleep(self.random_sleep_length(.2, .4))
+                return
+        return
     
 
     def adjust_camera(self, color, timeout=4):
@@ -372,7 +407,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             color: color to look for
         Returns:
             None/Void"""
-        random_x = random.randint(120, 270) 
+        random_x = random.randint(90, 180) 
         start_time = time.time() # lets make sure we don't wait too long
 
         # chance for x to be negative
@@ -391,9 +426,9 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
                 self.log_msg(f"Could not find highlighted color in {timeout} seconds...")
                 camera_thread.stop()    
                 return False
-            time.sleep(self.random_sleep_length(.35, .65))
+            time.sleep(self.random_sleep_length(.1, .2))
         camera_thread.stop()
-        time.sleep(self.random_sleep_length(.6,.9))
+        time.sleep(self.random_sleep_length())
         return True
 
 
