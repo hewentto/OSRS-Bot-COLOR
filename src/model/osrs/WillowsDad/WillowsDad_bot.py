@@ -309,17 +309,18 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         # move mouse to bank and click
         self.mouse.move_to(bank.random_point())
 
-        self.check_text(bank, ["Bank", "Deposit"])
-
         self.mouse.click()
 
         wait_time = time.time()
         while not self.is_bank_open():
+            if time.time() - wait_time > rd.fancy_normal_sample(3, 5) and self.api_m.get_is_player_idle():
+                self.mouse.move_to(bank.random_point())
+                self.mouse.click()
             # if we waited for 10 seconds, break out of loop
-            if time.time() - wait_time > 20:
-                self.log_msg("We clicked on the bank but player is not idle after 10 seconds, something is wrong, quitting bot.")
+            if time.time() - wait_time > 12:
+                self.log_msg("We clicked on the bank but bank is not open after 12 seconds, bot is quiting...")
                 self.stop()
-            time.sleep(self.random_sleep_length(.8, 1.3))
+            time.sleep(self.random_sleep_length())
         return
     
 
@@ -518,9 +519,8 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
 
         # move mouse each slot and click to deposit all
         for slot in slot_list:
-            self.check_text(self.win.inventory_slots[slot], "All")
+            self.mouse.move_to(self.win.inventory_slots[slot].random_point())
             self.mouse.click()
-            time.sleep(self.random_sleep_length())
 
         return
 

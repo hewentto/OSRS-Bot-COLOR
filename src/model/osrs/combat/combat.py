@@ -131,7 +131,7 @@ class OSRSCombat(OSRSBot, launcher.Launchable):
                     continue
                 self.mouse.click()
                 time.sleep(1)
-
+            
             # While in combat
             while not api_morg.get_is_player_idle():
                 # Check to eat food
