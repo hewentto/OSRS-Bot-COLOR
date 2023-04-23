@@ -88,6 +88,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         self.safety_squares = self.get_all_tagged_in_rect(self.win.game_view ,clr.CYAN)
 
 
+
     def is_runelite_focused(self):
         """
         This will check if the runelite window is focused.
@@ -236,37 +237,26 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             self.log_msg("Taking a Sklls Tab break...")
             self.mouse.move_to(self.win.cp_tabs[1].random_point())
             time.sleep(self.random_sleep_length())
-            if self.mouseover_text(contains="Skills", color=clr.OFF_WHITE):
-                self.mouse.click()
-                self.mouse.move_to(self.win.control_panel.random_point())
-                time.sleep(break_time)
+            self.mouse.click()
+            self.mouse.move_to(self.win.control_panel.random_point())
+            time.sleep(break_time)
 
-                # go back to inventory
-                self.mouse.move_to(self.win.cp_tabs[3].random_point())
-                time.sleep(self.random_sleep_length())
-                if self.mouseover_text(contains="Inventory", color=clr.OFF_WHITE):
-                    self.mouse.click()
-            else:
-                self.log_msg("Skills tab not found, break function didn't work...")
-                self.stop()
+            # go back to inventory
+            self.mouse.move_to(self.win.cp_tabs[3].random_point())
+            time.sleep(self.random_sleep_length())
+            self.mouse.click()
         else:
             self.log_msg("Taking an Equipment menu break...")
             self.mouse.move_to(self.win.cp_tabs[4].random_point())
             time.sleep(self.random_sleep_length())
-            if self.mouseover_text(contains="Worn", color=clr.OFF_WHITE):
-                self.mouse.click()
+            self.mouse.click()
 
-                self.mouse.move_to(self.win.control_panel.random_point())
-                time.sleep(break_time)
+            self.mouse.move_to(self.win.control_panel.random_point())
+            time.sleep(break_time)
 
-                # go back to inventory
-                self.mouse.move_to(self.win.cp_tabs[3].random_point())
-                if self.mouseover_text(contains="Inventory", color=clr.OFF_WHITE):
-                    self.mouse.click()
-
-            else:
-                self.log_msg("Combat tab not found, break function didn't work...")
-                self.stop()
+            # go back to inventory
+            self.mouse.move_to(self.win.cp_tabs[3].random_point())
+            self.mouse.click()
         return
     
 
@@ -302,22 +292,22 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         Args: 
             deposit_slots (int) - Inventory position of each different item to deposit.
         """
-        # move mouse one of the closes 2 banks
-
+        # move mouse to bank and click while not red click
         bank = self.choose_bank()
-
-        # move mouse to bank and click
         self.mouse.move_to(bank.random_point())
-
-        self.mouse.click()
+        while not self.mouse.click(check_red_click=True):
+            bank = self.choose_bank()
+            self.mouse.move_to(bank.random_point())
 
         wait_time = time.time()
         while not self.is_bank_open():
-            if time.time() - wait_time > rd.fancy_normal_sample(3, 5) and self.api_m.get_is_player_idle():
+            if time.time() - wait_time > rd.fancy_normal_sample(8, 12):
                 self.mouse.move_to(bank.random_point())
-                self.mouse.click()
-            # if we waited for 10 seconds, break out of loop
-            if time.time() - wait_time > 12:
+                while not self.mouse.click(check_red_click=True):
+                    bank = self.choose_bank()
+                    self.mouse.move_to(bank.random_point())
+            # if we waited for 17 seconds, break out of loop
+            if time.time() - wait_time > 17:
                 self.log_msg("We clicked on the bank but bank is not open after 12 seconds, bot is quiting...")
                 self.stop()
             time.sleep(self.random_sleep_length())
@@ -544,3 +534,13 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
                 return True
             time.sleep(.1)
         return False
+
+    def find_location(self, path):
+        """
+        Finds the location of an image in the game window
+        Args:
+            path (Path) - Path to image to search for
+        Returns:
+            RuneLiteObject - Object containing the location of the image
+        """
+        return imsearch.search_img_in_rect(path, self.win.minimap, .15)

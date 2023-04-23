@@ -10,10 +10,10 @@ from utilities.geometry import RuneLiteObject
 
 
 
-class OSRSWDFishing(WillowsDadBot):
+class OSRSWDMining(WillowsDadBot):
     def __init__(self):
-        bot_title = "WillowsDad Fishing"
-        description = """Fishes at supported locations."""
+        bot_title = "WillowsDad Mining"
+        description = """Mines at supported locations."""
         super().__init__(bot_title=bot_title, description=description)
         # Set option variables below (initial value is only used during UI-less testing)
         self.running_time = 200
@@ -21,10 +21,9 @@ class OSRSWDFishing(WillowsDadBot):
         self.afk_train = True
         self.delay_min =0.37
         self.delay_max = .67
-        self.style = "Cage"
-        self.power_fishing = False
-        self.fishing_tools = [ids.LOBSTER_POT]
-        self.fishing_bait = []
+        self.ores = ids.ores
+        self.power_Mining = False
+        self.Mining_tools = ids.pickaxes
 
 
     def create_options(self):
@@ -35,8 +34,7 @@ class OSRSWDFishing(WillowsDadBot):
         unpack the dictionary of options after the user has selected them.
         """
         super().create_options()
-        self.options_builder.add_dropdown_option("style", "What type of fishing?", ["Fly", "Bait", "Harpoon", "Net", "Cage"])
-        self.options_builder.add_checkbox_option("power_fishing", "Power Fishing? Drops everything in inventory.", [" "])
+        self.options_builder.add_checkbox_option("power_Mining", "Power Mining? Drops everything in inventory.", [" "])
 
     def save_options(self, options: dict):
         """
@@ -46,26 +44,8 @@ class OSRSWDFishing(WillowsDadBot):
         """
         super().save_options(options)
         for option in options:
-            if option == "style":
-                if options[option] == "Fly":
-                    self.style = "Fly"
-                    self.fishing_tools = [ids.FLY_FISHING_ROD]
-                    self.fishing_bait = [ids.FEATHER]
-                elif options[option] == "Bait":
-                    self.style = "Bait"
-                    self.fishing_tools = [ids.FISHING_ROD]
-                    self.fishing_bait = [ids.FISHING_BAIT]
-                elif options[option] == "Harpoon":
-                    self.style = "Harpoon"
-                    self.fishing_tools = [ids.HARPOON, ids.DRAGON_HARPOON, ids.BARBTAIL_HARPOON]
-                elif options[option] == "Net":
-                    self.style = "Net"
-                    self.fishing_tools = [ids.SMALL_FISHING_NET]
-                elif options[option] == "Cage":
-                    self.style = "Cage"
-                    self.fishing_tools = [ids.LOBSTER_POT]
-            elif option == "power_fishing":
-                self.power_fishing = options[option] != []
+            if option == "power_Mining":
+                self.power_Mining = options[option] != []
             else:
                 self.log_msg(f"Unexpected option: {option}")
 
@@ -73,8 +53,7 @@ class OSRSWDFishing(WillowsDadBot):
         self.log_msg(f"Bot will{'' if self.take_breaks else ' not'} take breaks.")
         self.log_msg(f"Bot will{'' if self.afk_train else ' not'} train like you're afk on another tab.")
         self.log_msg(f"Bot will wait between {self.delay_min} and {self.delay_max} seconds between actions.")
-        self.log_msg(f"Bot will{'' if self.power_fishing else ' not'} power chop.")
-        self.log_msg(f"Bot will cut {options['style']} logs.")
+        self.log_msg(f"Bot will{'' if self.power_Mining else ' not'} power mine.")
         self.log_msg("Options set successfully.")
         self.options_set = True
 
@@ -96,25 +75,19 @@ class OSRSWDFishing(WillowsDadBot):
             self.roll_chance_passed = False
 
             try:
-                # check if inventory is full
-                if self.api_m.get_is_inv_full():
-                    if not self.power_fishing:
-                        self.walk_to_color(clr.YELLOW, 1)
-                        self.bank_or_drop(deposit_slots)
-                        self.check_equipment()
-                        self.walk_to_color(clr.PINK, -1)
-                    else:
-                        self.bank_or_drop(deposit_slots)
+                while not self.api_m.get_is_inv_full():
+                    self.log_msg("Mining...")
+                    self.go_mining()
 
-                # Check if idle
-                if self.api_m.get_is_player_idle():
-                    self.log_msg("Fishing...")
-                    self.go_fish()
+                if not self.power_Mining:
+                    self.walk_to_color(clr.YELLOW, 1)
+                    self.bank_or_drop(deposit_slots)
+                    self.check_equipment()
+                    self.walk_to_color(clr.PINK, -1)
+                else:
+                    self.bank_or_drop(deposit_slots)
+                    
 
-                if self.is_fishing():
-                    if self.afk_train and self.is_runelite_focused():
-                        self.switch_window()
-                    self.sleep(percentage)
             except Exception as e:
                 self.log_msg(f"Exception: {e}")
                 self.loop_count += 1
@@ -173,17 +146,15 @@ class OSRSWDFishing(WillowsDadBot):
                 None"""
         super().setup()
         self.idle_time = 0
-        self.deposit_ids = [ids.RAW_ANCHOVIES, ids.RAW_SHRIMPS, ids.RAW_LOBSTER]
+        self.deposit_ids = self.ores
 
-        self.face_north()
-        
-        # Setup Checks for axes and tagged objects
+        # Setup Checks for pickaxes and tagged objects
         self.check_equipment()
 
-        if not self.get_nearest_tag(clr.YELLOW) and not self.get_nearest_tag(clr.PINK) and not self.power_fishing:
-            self.log_msg("Did not see a bank(YELLOW) or a fishing spot (PINK) on screen, make sure they are tagged.")
+        if not self.get_nearest_tag(clr.YELLOW) and not self.get_nearest_tag(clr.PINK) and not self.power_Mining:
+            self.log_msg("Did not see a bank(YELLOW) or a Mining spot (PINK) on screen, make sure they are tagged.")
             self.stop()
-        if not self.get_nearest_tag(clr.CYAN) and not self.power_fishing:
+        if not self.get_nearest_tag(clr.CYAN) and not self.power_Mining:
             self.log_msg("Did not see any tiles tagged CYAN, make sure they are tagged so I can find my way to the bank.")
             self.stop()
         
@@ -210,26 +181,23 @@ class OSRSWDFishing(WillowsDadBot):
         # self.close_bank()
 
 
-    def is_fishing(self):
+    def is_Mining(self):
         """
         This will check if the player is currently woodcutting.
         Returns: boolean
         Args: None
         """
         # get the current player animation
-        fishing_animation_list = [
-            animation.FISHING_BARBARIAN_ROD, animation.FISHING_BARBTAIL_HARPOON, animation.FISHING_BIG_NET, animation.FISHING_CAGE,
-            animation.FISHING_CRYSTAL_HARPOON, animation.FISHING_DRAGON_HARPOON, animation.FISHING_HARPOON, animation.FISHING_NET
-            ]
+        Mining_animation_list = [animation.MINING_ADAMANT_PICKAXE, animation.MINING_BLACK_PICKAXE, animation.MINING_BRONZE_PICKAXE, animation.MINING_DRAGON_PICKAXE, animation.MINING_IRON_PICKAXE, animation.MINING_MITHRIL_PICKAXE, animation.MINING_RUNE_PICKAXE, animation.MINING_STEEL_PICKAXE]
         current_animation = self.api_m.get_animation_id()
 
         # check if the current animation is woodcutting
-        return current_animation in fishing_animation_list
+        return current_animation in Mining_animation_list
         
 
-    def go_fish(self):
+    def go_mining(self):
         """
-        This will go fishing.
+        This will go Mining.
         Returns: void
         Args: None
         """
@@ -238,27 +206,27 @@ class OSRSWDFishing(WillowsDadBot):
             self.log_msg("Runelite is not focused...")
         while True: 
             self.idle_time = time.time()
-            if fishing_spot := self.get_nearest_tag(clr.PINK):
-                self.mouse.move_to(fishing_spot.random_point())
-                self.mouse.click()
-                time.sleep(self.random_sleep_length())
+            if Mining_spot := self.get_nearest_tag(clr.PINK):
+                self.mouse.move_to(Mining_spot.random_point())
+                while not self.mouse.click(check_red_click=True):
+                    Mining_spot = self.get_nearest_tag(clr.PINK)
                 break
             else:
-                self.log_msg("No fishing spot found...")
-                self.walk_to_color(clr.PINK, -1)
+                self.log_msg("No Mining spot found...")
                 if int(time.time() - self.idle_time) > 32:
                     self.adjust_camera(clr.PINK, 1)
                 if int(time.time() - self.idle_time) > 60:
-                    self.log_msg("No fishing spot found in 60 seconds, quitting bot.")
+                    self.log_msg("No Mining spot found in 60 seconds, quitting bot.")
                     self.stop()
+        self.api_m.wait_til_gained_xp("Mining")
 
 
     def bank_or_drop(self, deposit_slots):
         """
-        This will either bank or drop items depending on the power_fishing setting.
+        This will either bank or drop items depending on the power_Mining setting.
         Returns: void
         Args: None"""
-        if not self.power_fishing:
+        if not self.power_Mining:
             self.open_bank()
             time.sleep(self.random_sleep_length())
             self.deposit_items(deposit_slots)
@@ -274,14 +242,7 @@ class OSRSWDFishing(WillowsDadBot):
         Returns: none
         Args: None
         """
-        if not self.api_m.get_if_item_in_inv(self.fishing_tools) and not self.api_m.get_is_item_equipped(self.fishing_tools):
-            self.log_msg("No fishing tool or in inventory, please fix that...")
+        if not self.api_m.get_if_item_in_inv(self.Mining_tools) and not self.api_m.get_is_item_equipped(self.Mining_tools):
+            self.log_msg("No Mining tool or in inventory, please fix that...")
             self.stop()
-        if self.style in ["Fly", "Bait"] and not self.api_m.get_if_item_in_inv(
-            self.fishing_bait
-        ):
-            self.log_msg("No fishing bait in inventory...")
-            self.stop()
-        else:
-            self.log_msg(f"Using {self.style}, and successfully found tools.")
         

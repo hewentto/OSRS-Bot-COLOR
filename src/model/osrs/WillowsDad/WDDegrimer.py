@@ -138,29 +138,39 @@ class OSRSWDDegrimer(WillowsDadBot):
             minutes_since_last_break = int((time.time() - self.last_break) / 60)
             seconds = int(time.time() - self.last_break) % 60
             percentage = (self.multiplier * .01)  # this is the percentage chance of a break
-            deposit_slots = self.api_m.get_inv_item_first_indice(self.deposit_ids)
+            deposit_slots = self.api_m.get_first_indice(self.deposit_ids)
             self.roll_chance_passed = False
 
-            if len(self.api_m.get_inv_item_indices(self.withdraw_ids)) == 0:
-                self.open_bank()
-                self.deposit_items(deposit_slots)
-                time.sleep(self.random_sleep_length())
-                supplies_left = self.withdraw_items(self.withdraw_paths)
-                time.sleep(self.random_sleep_length())
-                self.close_bank()
+            try:
+                if len(self.api_m.get_inv_item_indices(self.withdraw_ids)) == 0:
+                    self.open_bank()
+                    self.deposit_items(deposit_slots)
+                    time.sleep(self.random_sleep_length())
+                    supplies_left = self.withdraw_items(self.withdraw_paths)
+                    time.sleep(self.random_sleep_length())
+                    self.close_bank()
 
-            # Check if idle
-            if self.api_m.get_is_player_idle():
-                self.degrime_herb(self.afk_train, self.take_breaks)
-                if self.afk_train:
-                    self.switch_window()
-                    self.sleep(percentage)
-                if not self.is_focused:
-                    self.switch_window()
+                # Check if idle
+                if self.api_m.get_is_player_idle():
+                    self.degrime_herb(self.afk_train, self.take_breaks)
+                    if self.afk_train:
+                        self.switch_window()
+                        self.sleep(percentage)
+                    if not self.is_focused:
+                        self.switch_window()
 
+            except Exception as e:
+                self.log_msg(f"Exception: {e}")
+                self.loop_count += 1
+                if self.loop_count > 5:
+                    self.log_msg("Too many exceptions, stopping.")
+                    self.log_msg(f"Last exception: {e}")
+                    self.stop()
+                continue
 
             # -- End bot actions --
             # self.check_break(runtime, percentage, minutes_since_last_break, seconds, deposit_slots)
+            self.loop_count = 0
             if self.take_breaks:
                 self.check_break(runtime, percentage, minutes_since_last_break, seconds)
             current_progress = round((time.time() - self.start_time) / self.end_time, 2)
