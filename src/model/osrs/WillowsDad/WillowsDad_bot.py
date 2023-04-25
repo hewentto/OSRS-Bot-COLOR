@@ -301,13 +301,13 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
 
         wait_time = time.time()
         while not self.is_bank_open():
-            if time.time() - wait_time > rd.fancy_normal_sample(8, 12):
+            if time.time() - wait_time > 20:
                 self.mouse.move_to(bank.random_point())
                 while not self.mouse.click(check_red_click=True):
                     bank = self.choose_bank()
                     self.mouse.move_to(bank.random_point())
             # if we waited for 17 seconds, break out of loop
-            if time.time() - wait_time > 17:
+            if time.time() - wait_time > 30:
                 self.log_msg("We clicked on the bank but bank is not open after 12 seconds, bot is quiting...")
                 self.stop()
             time.sleep(self.random_sleep_length())
@@ -480,6 +480,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         all_items_found = True
         for item_path in items:
             item_found = find_and_click(item_path)
+            time.sleep(self.random_sleep_length())
             if not item_found:
                 all_items_found = False
 
@@ -487,7 +488,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
 
 
 
-    def deposit_items(self, slot_list):
+    def deposit_items(self, slot_list, deposit_ids):
         """
         Clicks once on each unique item. 
         Bank must be open already.
@@ -508,11 +509,23 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             slot_list = [0]
 
         # move mouse each slot and click to deposit all
-        for slot in slot_list:
-            self.mouse.move_to(self.win.inventory_slots[slot].random_point())
-            self.mouse.click()
-
+        while self.api_m.get_inv_item_first_indice(deposit_ids) != -1:
+            for slot in slot_list:
+                self.mouse.move_to(self.win.inventory_slots[slot].random_point())
+                self.mouse.click()
+                time.sleep(self.random_sleep_length())
+        self.log_msg("Finished depositing items")
         return
+
+
+    def face_north(self):
+        """Faces the player north.
+            Args:
+                None
+            Returns:
+                None"""
+        self.mouse.move_to(self.win.compass_orb.random_point(), mouseSpeed = "fastest")
+        self.mouse.click()
 
 
     def close_bank(self):
@@ -527,7 +540,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         Args:
             None"""
         Desposit_all_img = self.WILLOWSDAD_IMAGES.joinpath("bank_all.png")
-        end_time = time.time() + 3
+        end_time = time.time() + self.random_sleep_length()
 
         while (time.time() < end_time):
             if deposit_btn := imsearch.search_img_in_rect(Desposit_all_img, self.win.game_view):

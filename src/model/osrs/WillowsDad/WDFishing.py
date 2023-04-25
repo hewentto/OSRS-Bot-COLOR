@@ -92,7 +92,7 @@ class OSRSWDFishing(WillowsDadBot):
             minutes_since_last_break = int((time.time() - self.last_break) / 60)
             seconds = int(time.time() - self.last_break) % 60
             percentage = (self.multiplier * .01)  # this is the percentage chance of a break
-            deposit_slots = self.api_m.get_first_indice(self.deposit_ids)
+            deposit_slots = self.api_m.get_inv_item_first_indice(self.deposit_ids)
             self.roll_chance_passed = False
 
             try:
@@ -190,16 +190,6 @@ class OSRSWDFishing(WillowsDadBot):
         self.check_bank_settings()
 
 
-    def face_north(self):
-        """Faces the player north.
-            Args:
-                None
-            Returns:
-                None"""
-        self.mouse.move_to(self.win.compass_orb.random_point(), mouseSpeed = "fastest")
-        self.mouse.click()
-
-
     def check_bank_settings(self):
         """Checks if the bank booth is set to deposit all items.
             Args:
@@ -261,7 +251,7 @@ class OSRSWDFishing(WillowsDadBot):
         if not self.power_fishing:
             self.open_bank()
             time.sleep(self.random_sleep_length())
-            self.deposit_items(deposit_slots)
+            self.deposit_items(deposit_slots, self.deposit_ids)
             time.sleep(self.random_sleep_length())
             self.close_bank()
             time.sleep(self.random_sleep_length())

@@ -88,7 +88,7 @@ class OSRSWDWoodcutting(WillowsDadBot):
             minutes_since_last_break = int((time.time() - self.last_break) / 60)
             seconds = int(time.time() - self.last_break) % 60
             percentage = (self.multiplier * .01)  # this is the percentage chance of a break
-            deposit_slots = self.api_m.get_first_indice(self.deposit_ids)
+            deposit_slots = self.api_m.get_inv_item_first_indice(self.deposit_ids)
             self.roll_chance_passed = False
             self.spec_energy = self.get_special_energy()
             try:
@@ -237,6 +237,10 @@ class OSRSWDWoodcutting(WillowsDadBot):
                 break
             else:
                 self.log_msg("No tree found, waiting for a tree to spawn...")
+                if safety := self.get_nearest_tag(clr.CYAN):
+                    self.mouse.move_to(safety.random_point())
+                    self.mouse.click()
+                    time.sleep(self.random_sleep_length())
                 time.sleep(self.random_sleep_length() * 3)
                 if int(time.time() - self.idle_time) > 32:
                     self.adjust_camera(clr.PINK, 1)
@@ -258,7 +262,8 @@ class OSRSWDWoodcutting(WillowsDadBot):
                     time.sleep(self.random_sleep_length(.8, 1.2))
                     break
             self.open_bank()
-            self.deposit_items(deposit_slots)
+            time.sleep(self.random_sleep_length())
+            self.deposit_items(deposit_slots, self.deposit_ids)
             time.sleep(self.random_sleep_length())
             self.close_bank()
         else:

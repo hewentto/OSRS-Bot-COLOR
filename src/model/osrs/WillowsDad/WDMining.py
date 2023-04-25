@@ -71,13 +71,21 @@ class OSRSWDMining(WillowsDadBot):
             minutes_since_last_break = int((time.time() - self.last_break) / 60)
             seconds = int(time.time() - self.last_break) % 60
             percentage = (self.multiplier * .01)  # this is the percentage chance of a break
-            deposit_slots = self.api_m.get_first_indice(self.deposit_ids)
+            deposit_slots = self.api_m.get_inv_item_first_indice(self.deposit_ids)
             self.roll_chance_passed = False
 
             try:
                 while not self.api_m.get_is_inv_full():
-                    self.log_msg("Mining...")
-                    self.go_mining()
+                    if self.api_m.get_run_energy() == 10000:
+                        self.mouse.move_to(self.win.run_orb.random_point())
+                        self.mouse.click()
+                        time.sleep(self.random_sleep_length())
+                    if Mining_spot := self.get_nearest_tag(clr.PINK):
+                        self.go_mining()
+                        deposit_slots = self.api_m.get_inv_item_first_indice(self.deposit_ids)
+                    else:
+                        self.walk_to_color(clr.PINK, -1)
+
 
                 if not self.power_Mining:
                     self.walk_to_color(clr.YELLOW, 1)
@@ -130,9 +138,9 @@ class OSRSWDMining(WillowsDadBot):
             else:
                 shapes = self.get_all_tagged_in_rect(self.win.game_view, clr.CYAN)
                 shapes_sorted = sorted(shapes, key=RuneLiteObject.distance_from_rect_left)
-                self.mouse.move_to(shapes_sorted[direction].random_point(), mouseSpeed = "fastest")
+                self.mouse.move_to(shapes_sorted[direction].random_point(), mouseSpeed = "medium")
                 self.mouse.click()
-                time.sleep(self.random_sleep_length())
+                time.sleep(self.random_sleep_length()*2)
         return
     
     
@@ -147,9 +155,12 @@ class OSRSWDMining(WillowsDadBot):
         super().setup()
         self.idle_time = 0
         self.deposit_ids = self.ores
+        self.deposit_ids.extend([ids.UNCUT_DIAMOND, ids.UNCUT_DRAGONSTONE, ids.UNCUT_EMERALD, ids.UNCUT_RUBY, ids.UNCUT_SAPPHIRE])
+
 
         # Setup Checks for pickaxes and tagged objects
         self.check_equipment()
+        self.face_north()
 
         if not self.get_nearest_tag(clr.YELLOW) and not self.get_nearest_tag(clr.PINK) and not self.power_Mining:
             self.log_msg("Did not see a bank(YELLOW) or a Mining spot (PINK) on screen, make sure they are tagged.")
@@ -204,21 +215,22 @@ class OSRSWDMining(WillowsDadBot):
         self.is_runelite_focused()   # check if runelite is focused
         if not self.is_focused:
             self.log_msg("Runelite is not focused...")
-        while True: 
+        while not self.api_m.get_is_inv_full(): 
             self.idle_time = time.time()
             if Mining_spot := self.get_nearest_tag(clr.PINK):
                 self.mouse.move_to(Mining_spot.random_point())
                 while not self.mouse.click(check_red_click=True):
-                    Mining_spot = self.get_nearest_tag(clr.PINK)
-                break
+                    if Mining_spot := self.get_nearest_tag(clr.PINK):
+                        self.mouse.move_to(Mining_spot.random_point())
+                self.api_m.wait_til_gained_xp("Mining", timeout=4)
+
             else:
-                self.log_msg("No Mining spot found...")
                 if int(time.time() - self.idle_time) > 32:
                     self.adjust_camera(clr.PINK, 1)
                 if int(time.time() - self.idle_time) > 60:
                     self.log_msg("No Mining spot found in 60 seconds, quitting bot.")
                     self.stop()
-        self.api_m.wait_til_gained_xp("Mining")
+
 
 
     def bank_or_drop(self, deposit_slots):
@@ -229,10 +241,11 @@ class OSRSWDMining(WillowsDadBot):
         if not self.power_Mining:
             self.open_bank()
             time.sleep(self.random_sleep_length())
-            self.deposit_items(deposit_slots)
+            self.deposit_items(deposit_slots, self.deposit_ids)
             time.sleep(self.random_sleep_length())
             self.close_bank()
             time.sleep(self.random_sleep_length())
+            self.face_north()
         else:
             self.drop_all(skip_slots=[0])
 
@@ -245,4 +258,29 @@ class OSRSWDMining(WillowsDadBot):
         if not self.api_m.get_if_item_in_inv(self.Mining_tools) and not self.api_m.get_is_item_equipped(self.Mining_tools):
             self.log_msg("No Mining tool or in inventory, please fix that...")
             self.stop()
+
+    def walk_to_color(self, color: clr, direction: int):
+        """
+        Walks to the bank.
+        Returns: void
+        Args: None"""
+        # find and click furthest CYAN tile till "color" tile is found
+        time_start = time.time()
+        while True:
+            if time.time() - time_start > 120:
+                self.log_msg("We've been walking for 2 minutes, something is wrong...stopping.")
+                self.stop()
+            if found := self.get_nearest_tag(color):
+                self.log_msg("Found next color.")
+                break
+            else:
+                shapes = self.get_all_tagged_in_rect(self.win.game_view, clr.CYAN)
+                if len(shapes) > 1:
+                    shapes_sorted = sorted(shapes, key=RuneLiteObject.distance_from_top_left)
+                    self.mouse.move_to(shapes_sorted[direction].random_point(), mouseSpeed = "fastest")
+                else:
+                    self.mouse.move_to(shapes[0].random_point(), mouseSpeed = "fastest")
+                self.mouse.click()
+                time.sleep(self.random_sleep_length(.35, 1.5))
+        return
         
