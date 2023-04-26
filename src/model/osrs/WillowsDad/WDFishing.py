@@ -151,7 +151,7 @@ class OSRSWDFishing(WillowsDadBot):
         time_start = time.time()
         while True:
             if time.time() - time_start > 45:
-                self.log_msg("We've been walking for 2 minutes, something is wrong...stopping.")
+                self.log_msg("We've been walking for 45 seconds, something is wrong...stopping.")
                 self.stop()
             if found := self.get_nearest_tag(color):
                 self.log_msg("Found next color.")
