@@ -209,11 +209,16 @@ class OSRSWDMining(WillowsDadBot):
         Returns: void
         Args: None
         """
+        self.breaks_skipped = 0
+        afk_time = 0
+        afk__start_time = time.time() 
+
         self.is_runelite_focused()   # check if runelite is focused
         if not self.is_focused:
             self.log_msg("Runelite is not focused...")
         while not self.api_m.get_is_inv_full(): 
             self.idle_time = time.time()
+            afk_time = int(time.time() - afk__start_time)
             if Mining_spot := self.get_nearest_tag(clr.PINK):
                 self.mouse.move_to(Mining_spot.random_point())
                 while not self.mouse.click(check_red_click=True):
@@ -232,7 +237,13 @@ class OSRSWDMining(WillowsDadBot):
                 if int(time.time() - self.idle_time) > 60:
                     self.log_msg("No Mining spot found in 60 seconds, quitting bot.")
                     self.stop()
+            self.breaks_skipped = afk_time // 15
 
+        if self.breaks_skipped > 0:
+            self.roll_chance_passed = True
+            self.multiplier += self.breaks_skipped * .25
+            self.log_msg(f"Skipped {self.breaks_skipped} break rolls while mining.")
+        return
 
 
     def bank_or_drop(self, deposit_slots):
@@ -273,24 +284,23 @@ class OSRSWDMining(WillowsDadBot):
             # When walking to bank lets check if we need to switch directions so it's a smoother walk by checking the minimap
             if color == clr.YELLOW:
                 if change_direction_img := imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("varrock_east_minimap.png"), self.win.minimap):
-                    self.log_msg("We are at the Varrock East bank, switching directions.")
                     switch_direction = True
             if time.time() - time_start > 120:
                 self.log_msg("We've been walking for 2 minutes, something is wrong...stopping.")
                 self.stop()
             if found := self.get_nearest_tag(color):
-                self.log_msg("Found next color.")
                 break
+            shapes = self.get_all_tagged_in_rect(self.win.game_view, clr.CYAN)
+            if len(shapes) > 1:
+                shapes_sorted = (
+                    sorted(shapes, key=RuneLiteObject.distance_from_rect_left)
+                    if switch_direction == True
+                    else sorted(shapes, key=RuneLiteObject.distance_from_top_left)
+                )
+                self.mouse.move_to(shapes_sorted[direction].random_point(), mouseSpeed = "fastest")
             else:
-                shapes = self.get_all_tagged_in_rect(self.win.game_view, clr.CYAN)
-                if len(shapes) > 1:
-                    if switch_direction == True:
-                        shapes_sorted = sorted(shapes, key=RuneLiteObject.distance_from_rect_left)
-                    else: shapes_sorted = sorted(shapes, key=RuneLiteObject.distance_from_top_left)
-                    self.mouse.move_to(shapes_sorted[direction].random_point(), mouseSpeed = "fastest")
-                else:
-                    self.mouse.move_to(shapes[0].random_point(), mouseSpeed = "fastest")
-                self.mouse.click()
-                time.sleep(self.random_sleep_length(.35, 1.5))
+                self.mouse.move_to(shapes[0].random_point(), mouseSpeed = "fastest")
+            self.mouse.click()
+            time.sleep(self.random_sleep_length(.35, .67))
         return
         
