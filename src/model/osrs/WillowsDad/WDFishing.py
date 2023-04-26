@@ -144,22 +144,33 @@ class OSRSWDFishing(WillowsDadBot):
         """
         Walks to the bank.
         Returns: void
-        Args: None"""
-        # find and click furthest CYAN tile till "color" tile is found
+        Args:
+            color: color of the tile to walk to
+            direction: 1 for closest, -1 for furthest"""
+        # find and click furthest or closest CYAN tile till "color" tile is found
         time_start = time.time()
         while True:
-            if time.time() - time_start > 120:
+            if time.time() - time_start > 45:
                 self.log_msg("We've been walking for 2 minutes, something is wrong...stopping.")
                 self.stop()
             if found := self.get_nearest_tag(color):
                 self.log_msg("Found next color.")
                 break
-            else:
-                shapes = self.get_all_tagged_in_rect(self.win.game_view, clr.CYAN)
-                shapes_sorted = sorted(shapes, key=RuneLiteObject.distance_from_rect_left)
-                self.mouse.move_to(shapes_sorted[direction].random_point(), mouseSpeed = "fastest")
+            else:   # Below we are randomly choosing between the first or last 2 tiles in the list of tiles
+                shapes = self.get_all_tagged_in_rect(self.win.game_view, clr.CYAN)   # get all cyan tiles
+                shapes_sorted = sorted(shapes, key=RuneLiteObject.distance_from_rect_left)   # sort by distance from top left
+
+                if len(shapes_sorted) == 1:
+                    tile = shapes_sorted[0] if direction == 1 else shapes_sorted[-1]
+                if (len(shapes_sorted) > 2):
+                    if direction == 1:
+                        tile = shapes_sorted[0] if rd.random_chance(.74) else shapes_sorted[1]
+                    else:
+                        tile = shapes_sorted[-1] if rd.random_chance(.74) else shapes_sorted[-2]
+
+                self.mouse.move_to(tile.random_point(), mouseSpeed = "fast")
                 self.mouse.click()
-                time.sleep(self.random_sleep_length())
+                time.sleep(self.random_sleep_length()*2)
         return
     
     
@@ -173,7 +184,7 @@ class OSRSWDFishing(WillowsDadBot):
                 None"""
         super().setup()
         self.idle_time = 0
-        self.deposit_ids = [ids.RAW_ANCHOVIES, ids.RAW_SHRIMPS, ids.RAW_LOBSTER]
+        self.deposit_ids = [ids.RAW_ANCHOVIES, ids.RAW_SHRIMPS, ids.RAW_LOBSTER, ids.RAW_TUNA, ids.RAW_SWORDFISH]
 
         self.face_north()
         
@@ -230,7 +241,9 @@ class OSRSWDFishing(WillowsDadBot):
             self.idle_time = time.time()
             if fishing_spot := self.get_nearest_tag(clr.PINK):
                 self.mouse.move_to(fishing_spot.random_point())
-                self.mouse.click()
+                while not self.mouse.click(check_red_click=True):
+                    if fishing_spot := self.get_nearest_tag(clr.PINK):
+                        self.mouse.move_to(fishing_spot.random_point(), mouseSpeed = "fastest")
                 time.sleep(self.random_sleep_length())
                 break
             else:
@@ -251,6 +264,7 @@ class OSRSWDFishing(WillowsDadBot):
         if not self.power_fishing:
             self.open_bank()
             time.sleep(self.random_sleep_length())
+            self.check_deposit_all()
             self.deposit_items(deposit_slots, self.deposit_ids)
             time.sleep(self.random_sleep_length())
             self.close_bank()

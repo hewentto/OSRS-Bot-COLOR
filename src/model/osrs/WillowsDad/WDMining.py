@@ -7,6 +7,10 @@ import utilities.random_util as rd
 import utilities.imagesearch as imsearch
 import pyautogui as pag
 from utilities.geometry import RuneLiteObject
+import utilities.game_launcher as launcher
+from pathlib import Path
+
+
 
 
 
@@ -57,6 +61,21 @@ class OSRSWDMining(WillowsDadBot):
         self.log_msg("Options set successfully.")
         self.options_set = True
 
+
+    def launch_game(self):
+    
+        # If playing RSPS, change `RuneLite` to the name of your game
+        if launcher.is_program_running("RuneLite"):
+            self.log_msg("RuneLite is already running. Please close it and try again.")
+            return
+        
+        settings = Path(__file__).parent.joinpath("WDMiner.properties")
+        launcher.launch_runelite(
+            properties_path=settings, 
+            game_title=self.game_title, 
+            use_profile_manager=True, 
+            profile_name="WDMiner", 
+            callback=self.log_msg)
 
     def main_loop(self):
         """
@@ -119,29 +138,6 @@ class OSRSWDMining(WillowsDadBot):
         self.log_msg("Finished.")
         self.logout()
         self.stop()
-
-
-    def walk_to_color(self, color: clr, direction: int):
-        """
-        Walks to the bank.
-        Returns: void
-        Args: None"""
-        # find and click furthest CYAN tile till "color" tile is found
-        time_start = time.time()
-        while True:
-            if time.time() - time_start > 120:
-                self.log_msg("We've been walking for 2 minutes, something is wrong...stopping.")
-                self.stop()
-            if found := self.get_nearest_tag(color):
-                self.log_msg("Found next color.")
-                break
-            else:
-                shapes = self.get_all_tagged_in_rect(self.win.game_view, clr.CYAN)
-                shapes_sorted = sorted(shapes, key=RuneLiteObject.distance_from_rect_left)
-                self.mouse.move_to(shapes_sorted[direction].random_point(), mouseSpeed = "medium")
-                self.mouse.click()
-                time.sleep(self.random_sleep_length()*2)
-        return
     
     
     def setup(self):
@@ -164,6 +160,7 @@ class OSRSWDMining(WillowsDadBot):
 
         if not self.get_nearest_tag(clr.YELLOW) and not self.get_nearest_tag(clr.PINK) and not self.power_Mining:
             self.log_msg("Did not see a bank(YELLOW) or a Mining spot (PINK) on screen, make sure they are tagged.")
+            self.adjust_camera(clr.YELLOW)
             self.stop()
         if not self.get_nearest_tag(clr.CYAN) and not self.power_Mining:
             self.log_msg("Did not see any tiles tagged CYAN, make sure they are tagged so I can find my way to the bank.")
@@ -225,6 +222,11 @@ class OSRSWDMining(WillowsDadBot):
                 self.api_m.wait_til_gained_xp("Mining", timeout=4)
 
             else:
+                if int(time.time() - self.idle_time) > 10:
+                    if self.get_nearest_tag(clr.CYAN):
+                        self.mouse.move_to(self.get_nearest_tag(clr.CYAN).random_point())
+                        self.mouse.click()
+                    time.sleep(self.random_sleep_length())
                 if int(time.time() - self.idle_time) > 32:
                     self.adjust_camera(clr.PINK, 1)
                 if int(time.time() - self.idle_time) > 60:
@@ -241,13 +243,13 @@ class OSRSWDMining(WillowsDadBot):
         if not self.power_Mining:
             self.open_bank()
             time.sleep(self.random_sleep_length())
+            self.check_deposit_all()
             self.deposit_items(deposit_slots, self.deposit_ids)
             time.sleep(self.random_sleep_length())
             self.close_bank()
             time.sleep(self.random_sleep_length())
-            self.face_north()
         else:
-            self.drop_all(skip_slots=[0])
+            self.drop_all(skip_slots=self.api_m.get_inv_slots_with_items(self.Mining_tools))
 
     def check_equipment(self):
         """
@@ -265,8 +267,14 @@ class OSRSWDMining(WillowsDadBot):
         Returns: void
         Args: None"""
         # find and click furthest CYAN tile till "color" tile is found
+        switch_direction = False
         time_start = time.time()
         while True:
+            # When walking to bank lets check if we need to switch directions so it's a smoother walk by checking the minimap
+            if color == clr.YELLOW:
+                if change_direction_img := imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("varrock_east_minimap.png"), self.win.minimap):
+                    self.log_msg("We are at the Varrock East bank, switching directions.")
+                    switch_direction = True
             if time.time() - time_start > 120:
                 self.log_msg("We've been walking for 2 minutes, something is wrong...stopping.")
                 self.stop()
@@ -276,7 +284,9 @@ class OSRSWDMining(WillowsDadBot):
             else:
                 shapes = self.get_all_tagged_in_rect(self.win.game_view, clr.CYAN)
                 if len(shapes) > 1:
-                    shapes_sorted = sorted(shapes, key=RuneLiteObject.distance_from_top_left)
+                    if switch_direction == True:
+                        shapes_sorted = sorted(shapes, key=RuneLiteObject.distance_from_rect_left)
+                    else: shapes_sorted = sorted(shapes, key=RuneLiteObject.distance_from_top_left)
                     self.mouse.move_to(shapes_sorted[direction].random_point(), mouseSpeed = "fastest")
                 else:
                     self.mouse.move_to(shapes[0].random_point(), mouseSpeed = "fastest")

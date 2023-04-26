@@ -71,15 +71,15 @@ class OSRSWDUltraCompostMaker(WillowsDadBot):
                 if len(self.api_m.get_inv_item_indices(ids.SUPERCOMPOST)) == 0:
                     self.open_bank()
                     time.sleep(self.random_sleep_length())
+                    self.check_deposit_all()
                     self.deposit_items(deposit_slots, self.deposit_ids)
                     self.sleep(self.random_sleep_length())
                     suplies_left = self.withdraw_items(self.withdraw_paths[0])
                     if not suplies_left:
                         self.log_msg("Out of supplies, stopping.")
                         self.stop()
-
                     self.close_bank()
-                else:
+                elif not self.is_bank_open():
                     self.make_compost()
                     if self.afk_train and self.is_runelite_focused():
                         self.switch_window()
@@ -196,6 +196,5 @@ class OSRSWDUltraCompostMaker(WillowsDadBot):
                 self.log_msg("Error finding ultracompost in chat box, stopping.")
                 self.stop()
             time.sleep(.1)
-        self.log_msg("Found ultracompost in chat box, making compost.")
         time.sleep(self.random_sleep_length())
         pag.press("space")

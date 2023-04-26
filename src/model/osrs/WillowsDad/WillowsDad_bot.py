@@ -214,7 +214,34 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         self.roll_chance_passed = False
 
 
+    def check_deposit_all(self):
+        """
+        This will check if deposit all png is found, and select all if not.
+        """
+        # get the path of deposit_all_grey.png and red
+        deposit_all_grey = self.WILLOWSDAD_IMAGES.joinpath("deposit_all_grey.png")
+        deposit_all_red = self.WILLOWSDAD_IMAGES.joinpath("deposit_all_red.png")
 
+        # if we find deposit all red in game view, return, else, find grey and click
+        time_searching = time.time()
+        while True:
+            if deposit_all_red_button := imsearch.search_img_in_rect(
+                deposit_all_red, self.win.game_view
+            ):
+                return   # We found deposit all is already selected, return.
+            # We now check several times within 1 second for deposit all grey, if we find it, click it and return.
+            if deposit_all_grey_button := imsearch.search_img_in_rect(
+                deposit_all_grey, self.win.game_view
+            ):
+                self.mouse.move_to(deposit_all_grey_button.random_point())
+                self.mouse.click()
+                return
+            if time.time() - time_searching > 1:
+                self.log_msg("Could not find deposit all button, quitting.")
+                self.stop()
+            time.sleep(.2)
+                
+        
     def reset_timer(self, minutes_since_last_break, seconds, percentage):
         self.log_msg(f"Break time, last break was {minutes_since_last_break} minutes and {seconds} seconds ago. \n Chance of random break was {round(percentage * 100)}%")
 
@@ -347,48 +374,19 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             Args: None
 
         """
-        if banks := self.get_all_tagged_in_rect(self.win.game_view, clr.YELLOW):
-            banks = sorted(banks, key=RuneLiteObject.distance_from_rect_center)
+        bank = self.get_nearest_tag(clr.YELLOW)
 
-            if len(banks) == 1:
-                return banks[0]
-            if (len(banks) > 1):
-                return banks[0] if rd.random_chance(.74) else banks[1]
-        else:
-            self.log_msg("No banks found, trying to adjust camera...")
-            if not self.adjust_camera(clr.YELLOW):
-                self.log_msg("No banks found, quitting bot...")
-                self.stop()
-            return (self.choose_bank())
-    
-
-    def choose_safety_square(self):
-        """
-        Choose one of the safe squares to click
-        Returns: Rect object
-        Args: None
-        """
-        if self.safety_squares:
-            return random.choice(self.safety_squares)
-        
-        self.log_msg("No Cyan safety squares found, trying to adjust camera...")
-        return
-        
-
-    def go_to_safety_square(self):
-        """
-        Go to a safety square to search for next object to click
-        Returns: void
-        Args: None
-        """
-        if safety_square := self.choose_safety_square():
-            self.mouse.move_to(safety_square.random_point())
-            self.mouse.click()
-            # wait till idle
-            while not self.api_m.get_is_player_idle():
-                time.sleep(self.random_sleep_length(.2, .4))
-                return
-        return
+        time_searching = time.time()
+        while not bank:
+            bank = self.get_nearest_tag(clr.YELLOW)
+            time.sleep(.2)
+            if time.time() - time_searching > 2:
+                self.log_msg("No banks found, trying to adjust camera...")
+                if not self.adjust_camera(clr.YELLOW):
+                    self.log_msg("No banks found, quitting bot...")
+                    self.stop()
+                return (self.choose_bank())
+        return bank
     
 
     def adjust_camera(self, color, timeout=4):
@@ -445,7 +443,6 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             amount (int) - Number of times to click on item
         Returns:
             void"""
-        
         for _ in range(amount):
             self.mouse.move_to(item.random_point())
             self.mouse.click()
@@ -456,20 +453,25 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         """
         Withdraws the correct amount of ingredients from the bank.
         Returns True if all items are found and clicked, False otherwise.
+        Args:
+            items: A Path object or list of Path objects representing the item images to search for in the bank.
+            count: An integer representing the amount of items to withdraw. Default is 1.
         """
-
         def find_and_click(item_img: Path) -> bool:
+            """Searches for an item image in the bank and clicks on it."""
             item_found = None
             time_looking_for_item = time.time() + 5
             while time.time() < time_looking_for_item and not item_found:
-                # try several times to find it
+                # Try several times to find the item
                 item_found = imsearch.search_img_in_rect(item_img, self.win.game_view)
                 if item_found:
                     break
             if not item_found:
+                # If the item is not found, log an error message and return False
                 self.log_msg(f"Could not find {item_img.stem} in bank, out of supplies...")
                 return False
             else:
+                # If the item is found, click on it and return True
                 self.click_in_bank(item_found, count)
                 return True
 
@@ -477,6 +479,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         if isinstance(items, Path):
             items = [items]
 
+        # Loop through each item and find/click it in the bank
         all_items_found = True
         for item_path in items:
             item_found = find_and_click(item_path)
@@ -484,36 +487,35 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             if not item_found:
                 all_items_found = False
 
+        # Return True if all items were found and clicked, False otherwise
         return all_items_found
-
 
 
     def deposit_items(self, slot_list, deposit_ids):
         """
-        Clicks once on each unique item. 
+        Clicks once on each unique item to deposit all matching items in the inventory to the bank.
         Bank must be open already.
         Deposit "All" must be selected.
-
         Args:
             slot_list: list of inventory slots to deposit items from
         Returns:
             None/Void
         """
-        try_count = 0
-
         if slot_list == -1:
+            # If there are no items to deposit, log a message and return early
             self.log_msg("No items to deposit, continuing...")
             return
-
-        if slot_list == 0:   # if theres only one item, it is the first slot
+        if slot_list == 0:
+            # If there's only one item, it is the first slot
             slot_list = [0]
-
-        # move mouse each slot and click to deposit all
+        # Loop until there are no more items in the inventory that match the deposit_ids
         while self.api_m.get_inv_item_first_indice(deposit_ids) != -1:
+            # Move the mouse to each slot in the inventory and click to deposit all matching items
             for slot in slot_list:
-                self.mouse.move_to(self.win.inventory_slots[slot].random_point())
+                self.mouse.move_to(self.win.inventory_slots[slot].random_point(), mouseSpeed = "fast")
                 self.mouse.click()
                 time.sleep(self.random_sleep_length())
+
         self.log_msg("Finished depositing items")
         return
 
@@ -524,36 +526,65 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
                 None
             Returns:
                 None"""
+        # Move the mouse to the compass orb and click it to face north
         self.mouse.move_to(self.win.compass_orb.random_point(), mouseSpeed = "fastest")
         self.mouse.click()
 
 
     def close_bank(self):
-        """Exits bank by sending escape key"""
-        pag.press("esc")
+        """Exits the bank by clicking on the exit button, or pressing the esc key if the button is not found"""
+        # Search for the exit button in the bank interface
+        exit_btn = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("bank_exit.png"), self.win.game_view)
+
+        # If the exit button is not found, press the esc key and check if the bank is closed
+        time_searching = time.time()
+        while not exit_btn:
+            exit_btn = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("bank_exit.png"), self.win.game_view, confidence=.1)
+            if time.time() - time_searching > 2:
+                # If the exit button is still not found after 2 second, log an error message and stop the bot
+                self.log_msg("Could not find bank exit button, pressing esc.")
+                pag.press("esc")
+                time.sleep(self.random_sleep_length())
+                if not self.is_bank_open():
+                    return
+                self.log_msg("Closing bank failed, quitting bot...")
+                self.stop()
+            time.sleep(.2)
+
+        # Click on the exit button to close the bank
+        self.mouse.move_to(exit_btn.random_point())
+        self.mouse.click()
+        time.sleep(self.random_sleep_length())
+
+        # If the bank is still open after clicking the exit button, log an error message and stop the bot
+        if self.is_bank_open():
+            self.log_msg("Closing bank failed, quitting bot...")
+            self.stop()
+
         return
 
+
+
     def is_bank_open(self):
-        """Makes sure bank is open, if not, opens it
+        """Checks if the bank is open, if not, opens it
         Returns:
-            True if bank is open, False if not
+            True if the bank is open, False if not
         Args:
             None"""
-        Desposit_all_img = self.WILLOWSDAD_IMAGES.joinpath("bank_all.png")
-        end_time = time.time() + self.random_sleep_length()
+        # Define the image to search for in the bank interface
+        deposit_all_img = self.WILLOWSDAD_IMAGES.joinpath("bank_all.png")
 
+        # Set a time limit for searching for the image
+        end_time = time.time() + 2
+
+        # Loop until the time limit is reached
         while (time.time() < end_time):
-            if deposit_btn := imsearch.search_img_in_rect(Desposit_all_img, self.win.game_view):
+            # Check if the image is found in the game view
+            if deposit_btn := imsearch.search_img_in_rect(deposit_all_img, self.win.game_view):
                 return True
-            time.sleep(.1)
-        return False
 
-    def find_location(self, path):
-        """
-        Finds the location of an image in the game window
-        Args:
-            path (Path) - Path to image to search for
-        Returns:
-            RuneLiteObject - Object containing the location of the image
-        """
-        return imsearch.search_img_in_rect(path, self.win.minimap, .15)
+            # Sleep for a short time to avoid excessive CPU usage
+            time.sleep(.2)
+
+        # If the image was not found within the time limit, return False
+        return False

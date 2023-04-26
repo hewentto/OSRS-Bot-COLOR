@@ -1,5 +1,5 @@
-from .WillowsDad.WDCombat import OSRSWDCombat
 from .woodcutter import OSRSWoodcutter
+from .WillowsDad.WDCombat import OSRSWDCombat
 from .WillowsDad.WDWoodcutting import OSRSWDWoodcutting
 from .WillowsDad.WDUltraCompost import OSRSWDUltraCompostMaker
 from .WillowsDad.WDDegrimer import OSRSWDDegrimer
