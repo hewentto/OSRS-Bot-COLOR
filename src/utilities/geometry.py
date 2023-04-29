@@ -69,16 +69,16 @@ class Rectangle:
         old_width = self.width
         old_height = self.height
 
-        self.width = int(self.width * scale_width)
-        self.height = int(self.height * scale_height)
+        new_width = int(self.width * scale_width)
+        new_height = int(self.height * scale_height)
 
         x_offset = int(old_width * (1 - scale_width) * anchor_x)
         y_offset = int(old_height * (1 - scale_height) * anchor_y)
 
-        self.left += x_offset
-        self.top += y_offset
+        new_left = self.left + x_offset
+        new_top = self.top + y_offset
 
-        return self
+        return Rectangle(new_left, new_top, new_width, new_height)
 
 
     def set_rectangle_reference(self, rect):
@@ -267,23 +267,32 @@ class RuneLiteObject:
             # Scale the object width by a factor of 1.5 and height by a factor of 2, using the top-right corner as the anchor point.
             obj.scale(scale_width=1.5, scale_height=2, anchor_x=1, anchor_y=0)
         """
+        newObject = self
         old_width = self._width
         old_height = self._height
 
-        self._width = int(self._width * scale_width)
-        self._height = int(self._height * scale_height)
+        new_width = int(self._width * scale_width)
+        new_height = int(self._height * scale_height)
 
         x_offset = int(old_width * (1 - scale_width) * anchor_x)
         y_offset = int(old_height * (1 - scale_height) * anchor_y)
 
-        self._x_min += x_offset
-        self._x_max = self._x_min + self._width
-        self._y_min += y_offset
-        self._y_max = self._y_min + self._height
+        new_x_min = self._x_min + x_offset
+        new_x_max = new_x_min + new_width
+        new_y_min = self._y_min + y_offset
+        new_y_max = new_y_min + new_height
 
-        self._center = (round((self._x_min + self._x_max) / 2), round((self._y_min + self._y_max) / 2))
+        new_center = (round((new_x_min + new_x_max) / 2), round((new_y_min + new_y_max) / 2))
 
-        return self
+        newObject._x_min = new_x_min
+        newObject._x_max = new_x_max
+        newObject._y_min = new_y_min
+        newObject._y_max = new_y_max
+        newObject._width = new_width
+        newObject._height = new_height
+        newObject._center = new_center
+
+        return newObject
 
     def set_rectangle_reference(self, rect: Rectangle):
         """

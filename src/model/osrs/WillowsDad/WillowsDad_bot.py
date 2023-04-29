@@ -226,12 +226,12 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         time_searching = time.time()
         while True:
             if deposit_all_red_button := imsearch.search_img_in_rect(
-                deposit_all_red, self.win.game_view
+                deposit_all_red, self.win.game_view.scale(scale_height=.2, scale_width=.5, anchor_y=.8)
             ):
                 return   # We found deposit all is already selected, return.
             # We now check several times within 1 second for deposit all grey, if we find it, click it and return.
             elif deposit_all_grey_button := imsearch.search_img_in_rect(
-                deposit_all_grey, self.win.game_view
+                deposit_all_grey, self.win.game_view.scale(scale_height=.2, scale_width=.5, anchor_y=.8)
             ):
                 self.mouse.move_to(deposit_all_grey_button.random_point())
                 self.mouse.click()
@@ -463,7 +463,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             time_looking_for_item = time.time() + 5
             while time.time() < time_looking_for_item and not item_found:
                 # Try several times to find the item
-                item_found = imsearch.search_img_in_rect(item_img, self.win.game_view)
+                item_found = imsearch.search_img_in_rect(item_img, self.win.game_view.scale(scale_width=.5))
                 if item_found:
                     break
             if not item_found:
@@ -534,12 +534,12 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
     def close_bank(self):
         """Exits the bank by clicking on the exit button, or pressing the esc key if the button is not found"""
         # Search for the exit button in the bank interface
-        exit_btn = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("bank_exit.png"), self.win.game_view)
+        exit_btn = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("bank_exit.png"), self.win.game_view.scale(scale_height=.2, scale_width=.5, anchor_y=0))
 
         # If the exit button is not found, press the esc key and check if the bank is closed
         time_searching = time.time()
         while not exit_btn:
-            exit_btn = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("bank_exit.png"), self.win.game_view, confidence=.1)
+            exit_btn = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("bank_exit.png"), self.win.game_view.scale(scale_height=.2, scale_width=.5, anchor_y=1), confidence=.1)
             if time.time() - time_searching > 2:
                 # If the exit button is still not found after 2 second, log an error message and stop the bot
                 self.log_msg("Could not find bank exit button, pressing esc.")
@@ -575,7 +575,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         # Loop until the time limit is reached
         while (time.time() < end_time):
             # Check if the image is found in the game view
-            if deposit_btn := imsearch.search_img_in_rect(deposit_all_img, self.win.game_view):
+            if deposit_btn := imsearch.search_img_in_rect(deposit_all_img, self.win.game_view.scale(scale_height=.2, scale_width=.5, anchor_y=.8)):
                 return True
 
             # Sleep for a short time to avoid excessive CPU usage
