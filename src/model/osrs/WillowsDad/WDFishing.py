@@ -26,6 +26,8 @@ class OSRSWDFishing(WillowsDadBot):
         self.power_fishing = False
         self.fishing_tools = [ids.LOBSTER_POT]
         self.fishing_bait = []
+        self.dragon_special = False
+
 
 
     def create_options(self):
@@ -38,6 +40,7 @@ class OSRSWDFishing(WillowsDadBot):
         super().create_options()
         self.options_builder.add_dropdown_option("style", "What type of fishing?", ["Fly", "Bait", "Harpoon", "Net", "Cage"])
         self.options_builder.add_checkbox_option("power_fishing", "Power Fishing? Drops everything in inventory.", [" "])
+        self.options_builder.add_checkbox_option("dragon_special", "Use Dragon Harpoon Special?", [" "])
 
     def save_options(self, options: dict):
         """
@@ -65,6 +68,8 @@ class OSRSWDFishing(WillowsDadBot):
                 elif options[option] == "Cage":
                     self.style = "Cage"
                     self.fishing_tools = [ids.LOBSTER_POT]
+            elif option == "dragon_special":
+                self.dragon_special = options[option] != []
             elif option == "power_fishing":
                 self.power_fishing = options[option] != []
             else:
@@ -95,6 +100,7 @@ class OSRSWDFishing(WillowsDadBot):
             percentage = (self.multiplier * .01)  # this is the percentage chance of a break
             deposit_slots = self.api_m.get_inv_item_first_indice(self.deposit_ids)
             self.roll_chance_passed = False
+            self.spec_energy = self.get_special_energy()
 
             try:
                 # check if inventory is full
@@ -247,6 +253,9 @@ class OSRSWDFishing(WillowsDadBot):
             self.log_msg("Runelite is not focused...")
         while True: 
             self.idle_time = time.time()
+            if self.spec_energy >= 100 and self.dragon_special:
+                self.activate_special()
+                self.log_msg("Dragon Harpoon Special Activated")
             if fishing_spot := self.get_nearest_tag(clr.PINK):
                 self.mouse.move_to(fishing_spot.random_point())
                 while not self.mouse.click(check_red_click=True):
