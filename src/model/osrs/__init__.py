@@ -7,3 +7,5 @@ from .WillowsDad.WDFishing import OSRSWDFishing
 from .WillowsDad.WillowsDad_bot import WillowsDadBot
 from .WillowsDad.WDMining import OSRSWDMining
 from .WillowsDad.WDThieving import OSRSWDThieving
+from .WillowsDad.WDDruidicRitual import OSRSWDDruidicRitual
+from .WillowsDad.WDSulfurCompost import OSRSSulfurCompost
