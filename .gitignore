@@ -170,3 +170,4 @@ src/settings.pickle
 src/runelite_settings/profile_manager_paths.json
 .sourcery.yaml
 src/model/osrs/WillowsDad/scalecalc.py
+src/model/osrs/WillowsDad/credentials.csv
