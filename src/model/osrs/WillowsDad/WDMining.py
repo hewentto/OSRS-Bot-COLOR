@@ -29,6 +29,7 @@ class OSRSWDMining(WillowsDadBot):
         self.power_Mining = False
         self.Mining_tools = ids.pickaxes
         self.dragon_special = False
+        self.location = "Varrock East"
 
 
     def create_options(self):
@@ -41,6 +42,7 @@ class OSRSWDMining(WillowsDadBot):
         super().create_options()
         self.options_builder.add_checkbox_option("power_Mining", "Power Mining? Drops everything in inventory.", [" "])
         self.options_builder.add_checkbox_option("dragon_special", "Use Dragon Pickaxe Special?", [" "])
+        self.options_builder.add_checkbox_option("location", "Location?", ["Varrock East","Mining Guild"])
 
     def save_options(self, options: dict):
         """
@@ -54,6 +56,8 @@ class OSRSWDMining(WillowsDadBot):
                 self.power_Mining = options[option] != []
             elif option == "dragon_special":
                 self.dragon_special = options[option] != []
+            elif option == "location":
+                self.location = options[option]
             else:
                 self.log_msg(f"Unexpected option: {option}")
 
@@ -291,6 +295,11 @@ class OSRSWDMining(WillowsDadBot):
         # Flag to determine whether to switch direction for smoother walking
         switch_direction = False
         time_start = time.time()
+        if self.location == "Varrock East":
+            sorting_direction = RuneLiteObject.distance_from_rect_top
+        elif self.location == "Mining Guild":
+            sorting_direction = RuneLiteObject.distance_from_rect_left
+
 
         while True:
             # Check if the player needs to switch direction for a smoother walk when walking to the bank
@@ -320,7 +329,7 @@ class OSRSWDMining(WillowsDadBot):
             # Sort the cyan tiles based on their distance from the left or top-left of the game view
             if len(shapes) > 1:
                 shapes_sorted = (
-                    sorted(shapes, key=RuneLiteObject.distance_from_rect_left)
+                    sorted(shapes, key=sorting_direction)
                     if switch_direction == True
                     else sorted(shapes, key=RuneLiteObject.distance_from_top_left)
                 )
