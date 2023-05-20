@@ -318,7 +318,7 @@ class MorgHTTPSocket:
         """
         data = self.__do_get(endpoint=self.inv_endpoint)
         return len([item["id"] for item in data if item["id"] != -1]) == 28
-    
+
     def get_is_inv_empty(self) -> bool:
         """
         Checks if player's inventory is empty.
@@ -331,7 +331,8 @@ class MorgHTTPSocket:
     def get_inv_item_indices(self, item_id: Union[List[int], int]) -> list:
         """
         For the given item ID(s), returns a list of inventory slot indexes that the item exists in.
-        Useful for locating items you do not want to drop.
+        Useful for locating items you do not want to drop. If you want to locate an item in your
+        inventory, consider using :meth:`MorgHTTPSocket.get_first_occurrence()` instead.
         Args:
                 item_id: The item ID to search for (an single ID, or list of IDs).
         Returns:
@@ -343,7 +344,7 @@ class MorgHTTPSocket:
         elif isinstance(item_id, list):
             return [i for i, inventory_slot in enumerate(data) if inventory_slot["id"] in item_id]
 
-    def get_inv_item_first_indice(self, item_id: Union[List[int], int]) -> Union[int, List[int]]:
+    def get_first_occurrence(self, item_id: Union[List[int], int]) -> Union[int, List[int]]:
         """
         For the given item ID(s), returns the first inventory slot index that the item exists in.
         e.g. [1, 1, 2, 3, 3, 3, 4, 4, 4, 4] -> [0, 2, 3, 6]
@@ -351,24 +352,19 @@ class MorgHTTPSocket:
             item_id: The item ID to search for (an single ID, or list of IDs).
         Returns:
             The first inventory slot index that the item exists in for each unique item ID.
-            If a single item ID is provided, returns an integer.
-            If no matching item ID is found, returns -1.
+            If a single item ID is provided, returns an integer (or -1).
+            If a list of item IDs is provided, returns a list of integers (or empty list).
         """
         data = self.__do_get(endpoint=self.inv_endpoint)
         if isinstance(item_id, int):
             return next((i for i, inventory_slot in enumerate(data) if inventory_slot["id"] == item_id), -1)
-
         elif isinstance(item_id, list):
             first_occurrences = {}
-
             for i, inventory_slot in enumerate(data):
                 item_id_in_slot = inventory_slot["id"]
                 if item_id_in_slot not in first_occurrences and item_id_in_slot in item_id:
                     first_occurrences[item_id_in_slot] = i
-
-            if list(first_occurrences.values()): 
-                return list(first_occurrences.values())
-            else: return -1
+            return list(first_occurrences.values())
 
     def get_inv_item_stack_amount(self, item_id: Union[int, List[int]]) -> int:
         """
@@ -456,9 +452,11 @@ if __name__ == "__main__":
         # Inventory Data
         if False:
             print(f"Is inventory full: {api.get_is_inv_full()}")
+            print(f"Is inventory empty: {api.get_is_inv_empty()}")
             print(f"Are logs in inventory?: {api.get_if_item_in_inv(ids.logs)}")
             print(f"Find amount of change in inv: {api.get_inv_item_stack_amount(ids.coins)}")
             print(f"Get position of all bones in inv: {api.get_inv_item_indices(ids.BONES)}")
+            print(f"Get position of first logs in inventory: {api.get_first_occurrence(ids.LOGS)}")
 
         # Wait for XP to change
         if False:
