@@ -81,6 +81,7 @@ class OSRSWDUltraCompostMaker(WillowsDadBot):
                     self.close_bank()
                 self.make_compost()
                 if self.afk_train and self.is_runelite_focused():
+                    time.sleep(self.random_sleep_length() * 2)
                     self.switch_window()
                 self.sleep(percentage)
 
