@@ -2,7 +2,7 @@ import datetime
 import time
 from model.osrs.osrs_bot import OSRSBot
 import utilities.color as clr
-from utilities.geometry import RuneLiteObject
+from utilities.geometry import Rectangle, RuneLiteObject, Point
 import utilities.random_util as rd
 from utilities.api.morg_http_client import MorgHTTPSocket
 from utilities.api.status_socket import StatusSocket
@@ -22,11 +22,6 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
 
     # Update the BOT_IMAGES path
     WILLOWSDAD_IMAGES = Path(__file__).parent.joinpath("WillowsDad_images")
-
-    user1 = ["Robxnxhood@gmail.com", "Free2Pay"]
-    user2 = ["Free2PayJourney@gmail.com", "Free2Pay"]
-
-    current_user = user1
 
     def __init__(self, bot_title, description) -> None:
         super().__init__(bot_title, description)
