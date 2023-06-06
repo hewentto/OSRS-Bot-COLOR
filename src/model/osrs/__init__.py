@@ -8,5 +8,3 @@ from .WillowsDad.WillowsDad_bot import WillowsDadBot
 from .WillowsDad.WDMining import OSRSWDMining
 from .WillowsDad.WDDruidicRitual import OSRSWDDruidicRitual
 from .WillowsDad.WDSulfurCompost import OSRSSulfurCompost
-from .WillowsDad.testbot import OSRSChrisFletcher
-from .WillowsDad.WDSmithing import OSRSWDSmithing
