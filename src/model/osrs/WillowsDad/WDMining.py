@@ -103,14 +103,14 @@ class OSRSWDMining(WillowsDadBot):
             self.roll_chance_passed = False
 
             try:
-                while not self.is_inv_full():
+                while self.is_last_inv_slot_empty():
                     if self.api_m.get_run_energy() == 10000:
                         run = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("run_enabled.png"), self.win.run_orb.scale(3,3))
                         if run is None:
                             self.mouse.move_to(self.win.run_orb.random_point())
                             self.mouse.click()
                             time.sleep(self.random_sleep_length())
-                    if Mining_spot := self.get_nearest_tag(clr.PINK):
+                    if Mining_spot := self.get_mining_spot():
                         self.go_mining()
                         deposit_slots = self.api_m.get_first_occurrence(self.deposit_ids)
                     else:
@@ -241,37 +241,57 @@ class OSRSWDMining(WillowsDadBot):
         self.is_runelite_focused()
         if not self.is_focused:
             self.log_msg("Runelite is not focused...")
-        
-        while not self.is_inv_full(): 
+
+        while self.is_last_inv_slot_empty(): 
             if self.get_special_energy() >= 100 and self.dragon_special:
                 self.activate_special()
                 self.log_msg("Dragon Pickaxe Special Activated")
-            
+
             self.idle_time = time.time()
             afk_time = int(time.time() - afk_start_time)
 
-            mining_spot = self.get_mining_spot()
-            
-            if mining_spot:
+            if mining_spot := self.get_mining_spot():
                 self.mouse.move_to(mining_spot.random_point())
                 while not self.mouse.click(check_red_click=True):
+                    # If the click was unsuccessful, get the mining spot again and move the mouse to it
                     mining_spot = self.get_mining_spot()
                     if mining_spot:
                         self.mouse.move_to(mining_spot.random_point())
-                self.api_m.wait_til_gained_xp("Mining", timeout=int(self.random_sleep_length() * 20))
+
+                time.sleep(self.random_sleep_length() * 1.5)
+                last_distance = mining_spot.distance_from_rect_center()
+                while True:
+                    # This loop will continuously check the distance until the character has stopped moving
+                    mining_spot = self.get_mining_spot()
+                    current_distance = mining_spot.distance_from_rect_center()
+                    if (abs(current_distance - last_distance) == 0):
+                        break
+                    last_distance = current_distance
+                    time.sleep(self.random_sleep_length() * 2)
+                # Now your character has reached the mining spot and is starting to mine.
+                # We check if the spot is depleted by comparing the current and last distance from the center                
+                while mining_spot and self.is_last_inv_slot_empty():
+                    current_distance = self.get_mining_spot().distance_from_rect_center()
+                    if current_distance > last_distance or self.is_idle():
+                        time.sleep(self.random_sleep_length()) 
+                        # The mining spot has been depleted
+                        break
+                    last_distance = current_distance
+                    time.sleep(self.random_sleep_length() / 2)  # Or whatever sleep time is appropriate
             else:
                 self.handle_no_mining_spot()
-            self.breaks_skipped = afk_time // 15
+
+        self.breaks_skipped = afk_time // 15
 
         if self.breaks_skipped > 0:
             self.roll_chance_passed = True
             self.multiplier += self.breaks_skipped * .25
             self.log_msg(f"Skipped {self.breaks_skipped} break rolls while mining.")
 
+
     def get_mining_spot(self):
         for color in [clr.BLUE, clr.GREEN, clr.PINK]:
-            mining_spot = self.get_nearest_tag(color)
-            if mining_spot:
+            if mining_spot := self.get_nearest_tag(color):
                 return mining_spot
         return None
 
@@ -292,7 +312,6 @@ class OSRSWDMining(WillowsDadBot):
         if idle_time_elapsed > IDLE_TIME_LIMIT_3:
             self.log_msg("No Mining spot found in 60 seconds, quitting bot.")
             self.stop()
-
 
 
     def bank_or_drop(self, deposit_slots):

@@ -150,28 +150,22 @@ class GeometryTesting(WillowsDadBot):
             # cv2.destroyAllWindows()
 
             # Assuming that you have already created an OutlinedObject object called obj:
-            bank = self.get_nearest_tag(clr.YELLOW)
-            self.mouse.move_to(bank.center())
-            self.mouse.click()
-            time.sleep(1)
+            # bank = self.get_nearest_tag(clr.YELLOW)
+            # self.mouse.move_to(bank.center())
+            # self.mouse.click()
+            # time.sleep(1)
 
-            obj = self.win.game_view
-            image = obj.screenshot()
+            x = .1
 
-            # Display the image using OpenCV
-            cv2.imshow('Screenshot', image)
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
-
-            obj = obj.scale(scale_height=.2, scale_width=.5, anchor_y=0)
-            image = obj.screenshot()
-
-            # Display the image using OpenCV
-            cv2.imshow('Screenshot', image)
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
-
-
+            while True:
+                obj = self.win.chat.scale(scale_height=0.37, scale_width=1, anchor_y=1, anchor_x=0)
+                image = obj.screenshot()
+                # Display the image using OpenCV
+                cv2.imshow('Screenshot', image)
+                cv2.waitKey(0)
+                cv2.destroyAllWindows()
+                x += .01
+                print(x)
 
         
 

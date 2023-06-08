@@ -14,6 +14,7 @@ from abc import ABCMeta, abstractmethod
 from pathlib import Path
 import utilities.game_launcher as launcher
 from typing import Union, List
+import utilities.ocr as ocr
 
 
 # New class WillowsDad_bot
@@ -415,6 +416,15 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             if slot := imsearch.search_img_in_rect(slot_img, slot_location):
                 return False
         return True
+    
+    def is_last_inv_slot_empty(self):
+        """
+        Checks if last inventory slot is empty.
+        Returns: bool
+        """
+        slot_location = self.win.inventory_slots[-1].scale(.5,.5)
+        slot_img = imsearch.BOT_IMAGES.joinpath(self.WILLOWSDAD_IMAGES, "emptyslot.png")
+        return bool(slot := imsearch.search_img_in_rect(slot_img, slot_location))
 
 
     def open_bank(self):
@@ -576,6 +586,10 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
                 self.log_msg(f"Could not find {item} in bank, mouseover check may have failed, or out of supplies")
                 self.stop()
         return True
+
+
+    def is_idle(self):
+        return bool(ocr.find_text("are", self.win.chat.scale(scale_height=0.37, scale_width=1, anchor_y=1, anchor_x=0), ocr.PLAIN_12, clr.Color([239, 16, 32])))
 
 
     def withdraw_items(self, items: Union[Path, List[Path]], count=1) -> bool:
