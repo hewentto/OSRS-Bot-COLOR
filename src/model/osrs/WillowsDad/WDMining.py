@@ -10,10 +10,7 @@ import pyautogui as pag
 from utilities.geometry import RuneLiteObject
 import utilities.game_launcher as launcher
 from pathlib import Path
-
-
-
-
+import utilities.ocr as ocr
 
 class OSRSWDMining(WillowsDadBot):
     def __init__(self):
@@ -29,7 +26,7 @@ class OSRSWDMining(WillowsDadBot):
         self.ores = ids.ores
         self.power_Mining = False
         self.Mining_tools = ids.pickaxes
-        self.dragon_special = False
+        self.dragon_special = True
         self.location = "Mining Guild"
 
 
@@ -44,6 +41,7 @@ class OSRSWDMining(WillowsDadBot):
         self.options_builder.add_checkbox_option("power_Mining", "Power Mining? Drops everything in inventory.", [" "])
         self.options_builder.add_checkbox_option("dragon_special", "Use Dragon Pickaxe Special?", [" "])
         self.options_builder.add_checkbox_option("location", "Location?", ["Varrock East","Mining Guild"])
+
 
     def save_options(self, options: dict):
         """
@@ -86,6 +84,7 @@ class OSRSWDMining(WillowsDadBot):
             profile_name="WDMiner", 
             callback=self.log_msg)
 
+
     def main_loop(self):
         """
         Main bot loop. We call setup() to set up the bot, then loop until the end time is reached.
@@ -104,12 +103,7 @@ class OSRSWDMining(WillowsDadBot):
 
             try:
                 while self.is_last_inv_slot_empty():
-                    if self.api_m.get_run_energy() == 10000:
-                        run = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("run_enabled.png"), self.win.run_orb.scale(3,3))
-                        if run is None:
-                            self.mouse.move_to(self.win.run_orb.random_point())
-                            self.mouse.click()
-                            time.sleep(self.random_sleep_length())
+                    self.check_run()
                     if Mining_spot := self.get_mining_spot():
                         self.go_mining()
                         deposit_slots = self.api_m.get_first_occurrence(self.deposit_ids)
@@ -158,7 +152,6 @@ class OSRSWDMining(WillowsDadBot):
             self.walk_horizontal(color=clr.YELLOW, direction=1)
         elif self.location[0] == "Mining Guild":
             self.walk_horizontal(color=clr.YELLOW, direction=1)
-
 
 
     def walk_to_mine(self):
@@ -233,19 +226,23 @@ class OSRSWDMining(WillowsDadBot):
         return current_animation in Mining_animation_list
         
 
+    def check_special(self):
+        if self.get_special_energy() >= 100:
+            self.activate_special()
+            self.log_msg("Dragon Pickaxe Special Activated")
+
+
     def go_mining(self):
         self.breaks_skipped = 0
         afk_time = 0
         afk_start_time = time.time() 
 
-        self.is_runelite_focused()
-        if not self.is_focused:
-            self.log_msg("Runelite is not focused...")
-
         while self.is_last_inv_slot_empty(): 
-            if self.get_special_energy() >= 100 and self.dragon_special:
-                self.activate_special()
-                self.log_msg("Dragon Pickaxe Special Activated")
+
+            if self.dragon_special:
+                self.check_special()
+            
+            self.check_run()
 
             self.idle_time = time.time()
             afk_time = int(time.time() - afk_start_time)
@@ -257,9 +254,8 @@ class OSRSWDMining(WillowsDadBot):
                     mining_spot = self.get_mining_spot()
                     if mining_spot:
                         self.mouse.move_to(mining_spot.random_point())
-
-                time.sleep(self.random_sleep_length() * 1.5)
                 last_distance = mining_spot.distance_from_rect_center()
+
                 while True:
                     # This loop will continuously check the distance until the character has stopped moving
                     mining_spot = self.get_mining_spot()
@@ -268,16 +264,19 @@ class OSRSWDMining(WillowsDadBot):
                         break
                     last_distance = current_distance
                     time.sleep(self.random_sleep_length() * 2)
+
                 # Now your character has reached the mining spot and is starting to mine.
                 # We check if the spot is depleted by comparing the current and last distance from the center                
-                while mining_spot and self.is_last_inv_slot_empty():
-                    current_distance = self.get_mining_spot().distance_from_rect_center()
-                    if current_distance > last_distance or self.is_idle():
-                        time.sleep(self.random_sleep_length()) 
-                        # The mining spot has been depleted
-                        break
+                while True:  # Start an indefinite loop
+                    mining_spot = self.get_mining_spot()
+                    current_distance = mining_spot.distance_from_rect_center()
+
+                    if current_distance > last_distance or self.is_idle() or self.no_ore() or not self.is_last_inv_slot_empty():
+                        break  # This will exit the loop if all conditions are met
+
                     last_distance = current_distance
                     time.sleep(self.random_sleep_length() / 2)  # Or whatever sleep time is appropriate
+
             else:
                 self.handle_no_mining_spot()
 
@@ -294,6 +293,11 @@ class OSRSWDMining(WillowsDadBot):
             if mining_spot := self.get_nearest_tag(color):
                 return mining_spot
         return None
+
+
+    def no_ore(self):
+        return bool(ocr.find_text("is", self.win.chat.scale(scale_height=0.37, scale_width=1, anchor_y=1, anchor_x=0), ocr.PLAIN_12, clr.BLACK))
+    
 
     def handle_no_mining_spot(self):
         # Define constants at the top of your script
@@ -324,10 +328,10 @@ class OSRSWDMining(WillowsDadBot):
             time.sleep(self.random_sleep_length()/2)
             self.check_deposit_all()
             self.deposit_items(self.api_m.get_first_occurrence(self.deposit_ids), self.deposit_ids)
-            time.sleep(self.random_sleep_length()/2)
             self.close_bank()
         else:
             self.drop_all(skip_slots=self.api_m.get_inv_item_indices(self.Mining_tools))
+
 
     def check_equipment(self):
         """

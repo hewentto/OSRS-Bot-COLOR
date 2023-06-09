@@ -589,7 +589,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
 
 
     def is_idle(self):
-        return bool(ocr.find_text("are", self.win.chat.scale(scale_height=0.37, scale_width=1, anchor_y=1, anchor_x=0), ocr.PLAIN_12, clr.Color([239, 16, 32])))
+        return bool(ocr.find_text("You", self.win.chat.scale(scale_height=0.37, scale_width=1, anchor_y=1, anchor_x=0), ocr.PLAIN_12, clr.Color([239, 16, 32])))
 
 
     def withdraw_items(self, items: Union[Path, List[Path]], count=1) -> bool:
@@ -634,7 +634,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         return all_items_found
 
 
-    def deposit_items(self, slot_list, clicks=1):
+    def deposit_items(self, slot_list, clicks=1, speed = "fastest"):
         """
         Clicks once on each unique item to deposit all matching items in the inventory to the bank.
         Bank must be open already.
@@ -653,7 +653,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             slot_list = [0]
         # Move the mouse to each slot in the inventory and click to deposit all matching items
         for slot in slot_list:
-            self.mouse.move_to(self.win.inventory_slots[slot].random_point(), mouseSpeed = "fast")
+            self.mouse.move_to(self.win.inventory_slots[slot].random_point(), mouseSpeed = speed)
             self.mouse.click()
             time.sleep(self.random_sleep_length())
 
@@ -696,10 +696,21 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         # Click on the exit button to close the bank
         self.mouse.move_to(self.exit_btn.random_point())
         self.mouse.click()
-        time.sleep(self.random_sleep_length())
 
         return
 
+
+    def check_run(self):
+        run_energy = self.get_run_energy
+        if run_energy < 50:
+            return
+        elif rd.random_chance(propability=run_energy/100):
+            run = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("run_enabled.png"), self.win.run_orb.scale(3,3))
+            if run is None:
+                self.mouse.move_to(self.win.run_orb.random_point())
+                self.mouse.click()
+                time.sleep(self.random_sleep_length())
+        return
 
 
     def is_bank_open(self):
@@ -725,6 +736,33 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
 
         # If the image was not found within the time limit, return False
         return False
+    
+
+    def bank_all(self):
+        """Searches and clicks on the "Deposit All" button in the bank interface
+        Args:
+            None"""
+        # Define the image to search for in the bank interface
+        deposit_all_img = self.WILLOWSDAD_IMAGES.joinpath("bank_all.png")
+
+        # Set a time limit for searching for the image
+        end_time = time.time() + 1
+
+        # Loop until the time limit is reached
+        while (time.time() < end_time):
+            # Check if the image is found in the game view, and move mouse and click if it is
+            if deposit_btn := imsearch.search_img_in_rect(deposit_all_img, self.win.game_view.scale(scale_height=.2, scale_width=.5, anchor_y=.8)):
+                self.mouse.move_to(deposit_btn.random_point())
+                self.mouse.click()
+                return
+
+            # Sleep for a short time to avoid excessive CPU usage
+            time.sleep(.2)
+
+        self.log_msg("Could not find deposit all button, quitting bot...")
+        self.stop()
+        return
+
     
     def check_withdraw_x(self, amount):
         if withdraw_grey := imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("deposit_x_grey.png"), self.win.game_view.scale(.5,.5, anchor_y=.75), confidence=.1):
