@@ -8,3 +8,5 @@ from .WillowsDad.WillowsDad_bot import WillowsDadBot
 from .WillowsDad.WDMining import OSRSWDMining
 from .WillowsDad.WDDruidicRitual import OSRSWDDruidicRitual
 from .WillowsDad.WDSulfurCompost import OSRSSulfurCompost
+from .WillowsDad.Geometry_testing import GeometryTesting
+from.WillowsDad.WDBirdhouseRun import OSRSWDBirdhouseRun

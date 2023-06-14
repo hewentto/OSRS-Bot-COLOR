@@ -257,7 +257,37 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
                 self.log_msg("Could not verifty deposit all settings, double check those.")
                 return
             time.sleep(.2)
-                
+
+
+    def check_deposit_5(self):
+        """
+        This will check if deposit 5 png is found, and select all if not.
+        """
+
+        # get the path of deposit_all_grey.png and red
+        deposit_5_grey = self.WILLOWSDAD_IMAGES.joinpath("deposit_5_grey.png")
+        deposit_5_red = self.WILLOWSDAD_IMAGES.joinpath("deposit_5_red.png")
+
+        # if we find deposit 5 red in game view, return, else, find grey and click
+        time_searching = time.time()
+        while True:
+            self.deposit_all_red_button = imsearch.search_img_in_rect(
+                deposit_5_red, self.win.game_view.scale(scale_height=.2, scale_width=.5, anchor_y=.8)
+            )
+            if self.deposit_all_red_button:
+                return   # We found deposit all is already selected, return.
+            # We now check several times within 1 second for deposit all grey, if we find it, click it and return.
+            elif deposit_all_grey_button := imsearch.search_img_in_rect(
+                deposit_5_grey, self.win.game_view.scale(scale_height=.2, scale_width=.5, anchor_y=.8)
+            ):
+                self.mouse.move_to(deposit_all_grey_button.random_point())
+                self.mouse.click()
+                return
+            if time.time() - time_searching > 1:
+                self.log_msg("Could not verifty deposit all settings, double check those.")
+                return
+            time.sleep(.2)
+
         
     def reset_timer(self, minutes_since_last_break, seconds, percentage):
         self.log_msg(f"Break time, last break was {minutes_since_last_break} minutes and {seconds} seconds ago. \n Chance of random break was {round(percentage * 100)}%")
@@ -278,8 +308,8 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         break_time = random.uniform(1, 15)
 
         if rd.random_chance(.7):
-            self.log_msg("Taking a Sklls Tab break...")
-            self.mouse.move_to(self.win.cp_tabs[1].random_point())
+            self.log_msg("Taking a tab break...")
+            self.mouse.move_to(self.win.cp_tabs[int(rd.fancy_normal_sample(0, 6))].random_point())
             time.sleep(self.random_sleep_length())
             self.mouse.click()
             self.mouse.move_to(self.win.control_panel.random_point())
@@ -288,18 +318,6 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             # go back to inventory
             self.mouse.move_to(self.win.cp_tabs[3].random_point())
             time.sleep(self.random_sleep_length())
-            self.mouse.click()
-        else:
-            self.log_msg("Taking an Equipment menu break...")
-            self.mouse.move_to(self.win.cp_tabs[4].random_point())
-            time.sleep(self.random_sleep_length())
-            self.mouse.click()
-
-            self.mouse.move_to(self.win.control_panel.random_point())
-            time.sleep(break_time)
-
-            # go back to inventory
-            self.mouse.move_to(self.win.cp_tabs[3].random_point())
             self.mouse.click()
         return
     
@@ -322,7 +340,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
                 self.log_msg("Player is not idle, waiting for player to be idle before taking break...")
                 time.sleep(self.random_sleep_length(3,8))
 
-            if minutes_since_last_break > 15:
+            if minutes_since_last_break > 25:
                 self.take_break(15, 120)
             else:
                 self.take_break()
@@ -380,7 +398,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
 
         # wait for login
         time.sleep(self.random_sleep_length(8,12))
-        if click_to_play := imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("click_to_play.png"), self.win.game_view):
+        if click_to_play := imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("click_to_play.png"), self.win.rectangle()):
             self.mouse.move_to(click_to_play.random_point())
             self.mouse.click()
         else:
@@ -474,7 +492,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         while all(txt not in self.mouseover_text() for txt in text):
             time.sleep(self.random_sleep_length(.1, .2))
 
-            if time.time() - time_searching > 2:
+            if time.time() - time_searching > 1:
                 self.mouse.move_to(object.random_point())
 
             if time.time() - time_searching > 4:
@@ -499,10 +517,8 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             bank = self.get_nearest_tag(clr.YELLOW)
             time.sleep(.2)
             if time.time() - time_searching > 2:
-                self.log_msg("No banks found, trying to adjust camera...")
-                if not self.adjust_camera(clr.YELLOW):
-                    self.log_msg("No banks found, quitting bot...")
-                    self.stop()
+                self.log_msg("No banks found, quitting bot...")
+                self.stop()
                 return (self.choose_bank())
         return bank
     
@@ -592,7 +608,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         return bool(ocr.find_text("You", self.win.chat.scale(scale_height=0.37, scale_width=1, anchor_y=1, anchor_x=0), ocr.PLAIN_12, clr.Color([239, 16, 32])))
 
 
-    def withdraw_items(self, items: Union[Path, List[Path]], count=1) -> bool:
+    def withdraw_items(self, items: Union[Path, List[Path]], count=1, first_found = False) -> bool:
         """
         Withdraws the correct amount of ingredients from the bank.
         Returns True if all items are found and clicked, False otherwise.
@@ -629,6 +645,8 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             time.sleep(self.random_sleep_length())
             if not item_found:
                 all_items_found = False
+            if first_found and item_found:
+                return True
 
         # Return True if all items were found and clicked, False otherwise
         return all_items_found
@@ -675,27 +693,30 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
     def close_bank(self):
         """Exits the bank by clicking on the exit button, or pressing the esc key if the button is not found"""
         # Search for the exit button in the bank interface
-        if not self.exit_btn:
-            self.exit_btn = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("bank_exit.png"), self.win.game_view.scale(scale_height=.2, scale_width=.5, anchor_y=0))
+        # if not self.exit_btn:
+        #     self.exit_btn = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("bank_exit.png"), self.win.game_view.scale(scale_height=.2, scale_width=.5, anchor_y=0))
 
-        # If the exit button is not found, press the esc key and check if the bank is closed
-        time_searching = time.time()
-        while not self.exit_btn:
-            self.exit_btn = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("bank_exit.png"), self.win.game_view.scale(scale_height=.2, scale_width=.5, anchor_y=1), confidence=.1)
-            if time.time() - time_searching > 2:
-                # If the exit button is still not found after 2 second, log an error message and stop the bot
-                self.log_msg("Could not find bank exit button, pressing esc.")
-                pag.press("esc")
-                time.sleep(self.random_sleep_length())
-                if not self.is_bank_open():
-                    return
-                self.log_msg("Closing bank failed, quitting bot...")
-                self.stop()
-            time.sleep(.2)
+        # # If the exit button is not found, press the esc key and check if the bank is closed
+        # time_searching = time.time()
+        # while not self.exit_btn:
+        #     self.exit_btn = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("bank_exit.png"), self.win.game_view.scale(scale_height=.2, scale_width=.5, anchor_y=1), confidence=.1)
+        #     if time.time() - time_searching > 2:
+        #         # If the exit button is still not found after 2 second, log an error message and stop the bot
+        #         self.log_msg("Could not find bank exit button, pressing esc.")
+        #         pag.press("esc")
+        #         time.sleep(self.random_sleep_length())
+        #         if not self.is_bank_open():
+        #             return
+        #         self.log_msg("Closing bank failed, quitting bot...")
+        #         self.stop()
+        #     time.sleep(.2)
 
-        # Click on the exit button to close the bank
-        self.mouse.move_to(self.exit_btn.random_point())
-        self.mouse.click()
+        # # Click on the exit button to close the bank
+        # self.mouse.move_to(self.exit_btn.random_point())
+        # self.mouse.click()
+
+        # send esc key to close bank
+        pag.press("esc")
 
         return
 
@@ -783,3 +804,350 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         else:
             self.log_msg("Could not find withdraw x button using image search, please check code, report to developer.")
             self.stop()
+
+    
+    def take_birdhouse_break(self):
+        """This will complete a birdhouse run
+        Args:
+            None
+            Returns:"""
+        
+        # setup
+        birdhouse_seeds = [self.WILLOWSDAD_IMAGES.joinpath("Hammerstone_seeds.png")]
+        birdhouse_items = [self.WILLOWSDAD_IMAGES.joinpath("Yew_birdhouse.png")]
+        # birdhosues, seeds, digsite pendant
+        self.face_north()
+        # banking
+        self.open_bank()
+        self.check_deposit_5()
+        if not self.is_inv_empty():
+            self.bank_all()
+        self.withdraw_all(birdhouse_seeds)
+        self.withdraw_items(birdhouse_items, first_found=True)
+        self.close_bank()
+
+        # teleport to digsite
+        self.__teleport_to_digsite()
+        time.sleep(self.random_sleep_length(2, 2.9))
+
+        # run to magic mushtree
+        self.walk_vertical(color=clr.PINK, direction=1)
+
+        # teleport to verdant valley
+        self.__teleport_to_verdant_valley()
+        self.wait_until_color(color=clr.YELLOW)
+
+        self.__do_verdant_valley_run()
+
+        # teleport to meadows
+        self.__teleport_to_meadows()
+        self.wait_until_color(color=clr.GREEN)
+
+        self.__do_meadows_run()
+
+        self.__walk_to_birdhouse_bank()
+        self.open_bank()
+        self.bank_all()
+        time.sleep(self.random_sleep_length())
+        self.close_bank()
+
+
+    def __walk_to_birdhouse_bank(self):
+        # walk vertical to bank
+        self.walk_vertical(color=clr.YELLOW, direction=-1)
+
+
+    def __do_meadows_run(self):
+        # run to first birdhouse
+        self.run_to_birdhouse(clr.PINK, "horizontal", 1)
+
+        # load seeds
+        self.load_seeds(clr.PINK)
+
+        # run to second birdhouse
+        self.run_to_birdhouse(clr.BLUE, "vertical", -1)
+
+        # load seeds
+        self.load_seeds(clr.BLUE)
+
+
+    def __teleport_to_meadows(self):
+        """runs to tree from verdant valley and teleports to meadows"""
+        # run to tree
+        self.walk_vertical(color=clr.YELLOW, direction=-1)
+
+        tree = self.get_nearest_tag(clr.YELLOW)
+        self.mouse.move_to(tree.random_point())
+        while not self.mouse.click(check_red_click=True):
+            tree = self.get_nearest_tag(clr.YELLOW)
+            self.mouse.move_to(tree.random_point())
+        time.sleep(self.random_sleep_length() * 2)
+        
+        btn_found = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("mushtree_title.png"), self.win.game_view)
+        while btn_found is None:
+            btn_found = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("mushtree_title.png"), self.win.game_view)
+            time.sleep(self.random_sleep_length())
+        
+        # send key press "2"
+        pag.press("4")
+
+
+    def __do_verdant_valley_run(self):
+        # run to first birdhouse
+        self.run_to_birdhouse(clr.PINK, "horizontal", 1)
+
+        # load seeds
+        self.load_seeds(clr.PINK)
+
+        # run to second birdhouse
+        self.run_to_birdhouse(clr.BLUE, "horizontal", 1)
+
+        # load seeds
+        self.load_seeds(clr.BLUE)
+
+    def run_to_birdhouse(self, color, direction, dir_value):
+        if direction == "horizontal":
+            self.walk_horizontal(color=color, direction=dir_value)
+        elif direction == "vertical":
+            self.walk_vertical(color=color, direction=dir_value)
+        else:
+            return  # Invalid direction
+        current_xp = self.get_total_xp()
+        birdhouse = self.get_nearest_tag(color)
+        self.mouse.move_to(birdhouse.random_point())
+        while not self.mouse.click(check_red_click=True):
+            birdhouse = self.get_nearest_tag(color)
+            self.mouse.move_to(birdhouse.random_point())
+
+        # wait till I stop moving
+        while not current_xp < self.get_total_xp():
+            time.sleep(self.random_sleep_length())
+
+        time.sleep(self.random_sleep_length())
+        self.mouse.move_to(self.get_nearest_tag(color).random_point())
+        while not self.mouse.click(check_red_click=True):
+            self.mouse.move_to(self.get_nearest_tag(color).random_point())
+
+        time.sleep(self.random_sleep_length())
+
+
+    def load_seeds(self, color):
+        seeds = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("Hammerstone_seeds.png"), self.win.control_panel)
+        if seeds is None:
+            self.log_msg("Could not find seeds, quitting bot...")
+            self.stop()
+        self.mouse.move_to(seeds.random_point())
+        self.mouse.click()
+        time.sleep(self.random_sleep_length())
+
+        self.mouse.move_to(self.get_nearest_tag(color).random_point())
+        while not self.mouse.click(check_red_click=True):
+            seeds = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("Hammerstone_seeds.png"), self.win.control_panel)
+            if seeds is None:
+                self.log_msg("Could not find seeds, quitting bot...")
+                self.stop()
+            self.mouse.move_to(seeds.random_point())
+            self.mouse.click()
+            time.sleep(self.random_sleep_length())
+            self.mouse.move_to(self.get_nearest_tag(color).random_point())
+
+        time.sleep(self.random_sleep_length())
+
+        
+
+    def __teleport_to_verdant_valley(self):
+        """This will click the mushtree and teleport to verdant valley"""
+
+        # click on the tree
+        tree = self.get_nearest_tag(clr.PINK)
+        self.mouse.move_to(tree.random_point())
+        while not self.mouse.click(check_red_click=True):
+            tree = self.get_nearest_tag(clr.PINK)
+            self.mouse.move_to(tree.random_point())
+        time.sleep(self.random_sleep_length() * 2)
+        
+        btn_found = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("mushtree_title.png"), self.win.game_view)
+        while btn_found is None:
+            btn_found = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("mushtree_title.png"), self.win.game_view)
+            time.sleep(self.random_sleep_length())
+        
+        # send key press "2"
+        pag.press("2")
+
+    def __teleport_to_digsite(self):
+        """This will right click teleport to digsite"""
+
+        # open worn equipment
+        self.mouse.move_to(self.win.cp_tabs[4].random_point())
+        self.mouse.click()
+
+        # find and click digspite pendant
+        digsite_pendant = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("Digsite_pendant.png"), self.win.control_panel)
+        if digsite_pendant is None:
+            self.log_msg("Could not find digsite pendant in controlpanel, please check code, report to developer.")
+            self.stop()
+        self.mouse.move_to(digsite_pendant.random_point())
+        self.mouse.click()
+        
+        time.sleep(self.random_sleep_length() * 2)
+        self.mouse.move_to(self.win.cp_tabs[3].random_point())
+        self.mouse.click()
+
+
+    def withdraw_all(self, items: Union[Path, List[Path]]):
+        """This will shift+click to withdraw all items from a bank"""
+        def find_and_click(item_img: Path) -> bool:
+            """Searches for an item image in the bank and clicks on it."""
+            item_found = None
+            time_looking_for_item = time.time() + 5
+            while time.time() < time_looking_for_item and not item_found:
+                # Try several times to find the item
+                item_found = imsearch.search_img_in_rect(item_img, self.win.game_view.scale(scale_width=.5))
+                if item_found:
+                    break
+            if not item_found:
+                # If the item is not found, log an error message and return False
+                self.log_msg(f"Could not find {item_img.stem} in bank, out of supplies...")
+                return False
+            else:
+                # If the item is found, move mouse to item, and shift+click to withdraw all
+                self.mouse.move_to(item_found.random_point())
+                pag.keyDown("shift")
+                self.mouse.click()
+                pag.keyUp("shift")
+                return True
+
+        # Convert the input to a list if it's a single Path object
+        if isinstance(items, Path):
+            items = [items]
+
+        # Loop through each item and find/click it in the bank
+        all_items_found = True
+        for item_path in items:
+            item_found = find_and_click(item_path)
+            time.sleep(self.random_sleep_length())
+            if not item_found:
+                all_items_found = False
+
+        # Return True if all items were found and clicked, False otherwise
+        return all_items_found
+
+
+    def walk_vertical(self, direction: int, color: clr = None, timeout: int = 60, img: Path = None):
+        """
+        Walks towards or away from a specific color tile in game or image.
+        Returns: void
+        Args: 
+            color: color of the tile to walk to
+            direction: direction to walk to (towards 1, away -1)
+            timeout: time to wait before stopping"""
+        
+        if color is None and img is None:
+            self.log_msg("No stop condition. Add color or img path to stop walking.")
+            self.stop()
+
+        time_start = time.time()
+        while True:
+            # Check if the player needs to switch direction for a smoother walk when walking to the bank
+            if img != None:
+                if change_direction_img := imsearch.search_img_in_rect(img, self.win.minimap):
+                    return
+
+            # Stop walking if timeout is exceeded
+            if time.time() - time_start > timeout:
+                self.log_msg(f"We've been walking for {timeout} seconds, something is wrong...stopping.")
+                self.stop()
+
+            if color is not None:
+                # Stop walking if the target color tile is found
+                if found := self.get_nearest_tag(color):
+                    break
+
+            # Get all cyan tiles in the game view
+            shapes = self.get_all_tagged_in_rect(self.win.game_view, clr.CYAN)
+
+            # Stop if no cyan tiles are found
+            if shapes is []:
+                self.log_msg("No cyan tiles found, stopping.")
+                return
+            
+            reverse = direction != 1
+
+            # Sort the cyan tiles based on their distance from the top-center
+            if len(shapes) > 1:
+                shapes_sorted = sorted(shapes, key=RuneLiteObject.distance_from_rect_top , reverse=reverse)
+                self.mouse.move_to(shapes_sorted[int(rd.fancy_normal_sample(0,1))].scale(3,3).random_point(), mouseSpeed = "fastest")
+            else:
+                self.mouse.move_to(shapes[0].scale(3,3).random_point(), mouseSpeed = "fastest")
+
+            # Click on the selected tile and wait for a random duration between 0.35 and 0.67 seconds
+            self.mouse.click()
+            time.sleep(self.random_sleep_length(1, 1.7))
+
+        return
+    
+
+    def walk_horizontal(self, direction: int, color: clr = None, timeout: int = 60, img: Path = None):
+        """
+        Walks towards or away from a specific color tile in game or image.
+        Returns: void
+        Args: 
+            color: color of the tile to walk to
+            direction: direction to walk to (towards 1, away -1)
+            timeout: time to wait before stopping"""
+        
+        if color is None and img is None:
+            self.log_msg("No stop condition. Add color or img path to stop walking.")
+            self.stop()
+
+        time_start = time.time()
+        while True:
+            # Check if the player needs to switch direction for a smoother walk when walking to the bank
+            if img != None:
+                if change_direction_img := imsearch.search_img_in_rect(img, self.win.minimap):
+                    return
+
+            # Stop walking if timeout is exceeded
+            if time.time() - time_start > timeout:
+                self.log_msg(f"We've been walking for {timeout} seconds, something is wrong...stopping.")
+                self.stop()
+
+            if color is not None:
+                # Stop walking if the target color tile is found
+                if found := self.get_nearest_tag(color):
+                    break
+
+            # Get all cyan tiles in the game view
+            shapes = self.get_all_tagged_in_rect(self.win.game_view, clr.CYAN)
+
+            # Stop if no cyan tiles are found
+            if shapes is []:
+                self.log_msg("No cyan tiles found, stopping.")
+                return
+            
+            reverse = direction != 1
+
+            # Sort the cyan tiles based on their distance from the top-center
+            if len(shapes) > 1:
+                shapes_sorted = sorted(shapes, key=RuneLiteObject.distance_from_rect_left , reverse=reverse)
+                self.mouse.move_to(shapes_sorted[int(rd.fancy_normal_sample(0,1))].scale(3,3).random_point(), mouseSpeed = "fastest")
+            else:
+                self.mouse.move_to(shapes[0].scale(3,3).random_point(), mouseSpeed = "fastest")
+
+            # Click on the selected tile and wait for a random duration between 0.35 and 0.67 seconds
+            self.mouse.click()
+            time.sleep(self.random_sleep_length(.67, 1.24))
+
+        return
+    
+    def wait_until_color(self, color: clr, timeout: int = 10):
+        """this will wait till nearest tag is not none"""
+        time_start = time.time()
+        while True:
+            if time.time() - time_start > timeout:
+                self.log_msg(f"We've been waiting for {timeout} seconds, something is wrong...stopping.")
+                self.stop()
+            if found := self.get_nearest_tag(color):
+                break
+            time.sleep(self.random_sleep_length())
+        return

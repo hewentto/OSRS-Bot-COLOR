@@ -13,6 +13,7 @@ import utilities.imagesearch as imsearch
 import pyautogui as pag
 from utilities.geometry import RuneLiteObject
 import pyautogui
+import utilities.api.T1G_API as tig
 
 
 
@@ -155,17 +156,20 @@ class GeometryTesting(WillowsDadBot):
             # self.mouse.click()
             # time.sleep(1)
 
-            x = .1
+            obj = self.win.game_view.scale(scale_width=.5, anchor_x=.7)
+            self.log_msg(f"{tig.getEquippedWeapon()}")
+            time.sleep(3)
+            # x = .1
 
-            while True:
-                obj = self.win.chat.scale(scale_height=0.37, scale_width=1, anchor_y=1, anchor_x=0)
-                image = obj.screenshot()
-                # Display the image using OpenCV
-                cv2.imshow('Screenshot', image)
-                cv2.waitKey(0)
-                cv2.destroyAllWindows()
-                x += .01
-                print(x)
+            # while True:
+            #     obj = self.win.chat.scale(scale_height=0.37, scale_width=1, anchor_y=1, anchor_x=0)
+            #     image = obj.screenshot()
+            #     # Display the image using OpenCV
+            #     cv2.imshow('Screenshot', image)
+            #     cv2.waitKey(0)
+            #     cv2.destroyAllWindows()
+            #     x += .01
+            #     print(x)
 
         
 

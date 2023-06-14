@@ -177,3 +177,5 @@ src/model/osrs/WillowsDad/credentials.csv
 
 # Photoshop files
 *.psd
+src/utilities/api/T1G_API.py
+src/utilities/ScreenToClient.py
