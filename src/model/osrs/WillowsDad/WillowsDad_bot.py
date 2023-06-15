@@ -1,5 +1,7 @@
 import datetime
 import time
+
+import cv2
 from model.osrs.osrs_bot import OSRSBot
 import utilities.color as clr
 from utilities.geometry import Rectangle, RuneLiteObject, Point
@@ -805,6 +807,38 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             self.log_msg("Could not find withdraw x button using image search, please check code, report to developer.")
             self.stop()
 
+
+    def right_click_select(self, text:str, color:clr):
+        """Right clicks on the screen and selects the option with the given text"""
+        self.mouse.right_click()
+
+        # Get the current mouse position and create a Point from it
+        mouse_pos = Point(*pag.position())
+
+        # Get monitor dimensions
+        max_x, max_y = pag.size()
+
+        # Define the dimensions of the rectangle as percentages of the screen size
+        rect_width = int(max_x * 0.2)  # 20% of the screen width
+        rect_height = int(max_y * 0.3)  # 30% of the screen height
+
+        # Create points for the rectangle
+        p1 = Point(max(mouse_pos.x - rect_width // 2, 0), mouse_pos.y)  # top-left point
+        p2 = Point(min(mouse_pos.x + rect_width // 2, max_x), min(mouse_pos.y + rect_height, max_y))  # bottom-right point
+
+        # Create the rectangle
+        rect = Rectangle.from_points(p1, p2)
+
+        found = ocr.find_text(text, rect, ocr.BOLD_12, color)
+
+        # if text was not found, lets quit
+        if not found:
+            self.log_msg(f"Could not find text {text} in right click menu, quitting bot...")
+            self.stop()
+
+        self.mouse.move_to(found[0].random_point())
+        self.mouse.click()
+
     
     def take_birdhouse_break(self):
         """This will complete a birdhouse run
@@ -919,7 +953,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             birdhouse = self.get_nearest_tag(color)
             self.mouse.move_to(birdhouse.random_point())
 
-        # wait till I stop moving
+        # wait till xp is gained
         while not current_xp < self.get_total_xp():
             time.sleep(self.random_sleep_length())
 
@@ -1076,7 +1110,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             # Sort the cyan tiles based on their distance from the top-center
             if len(shapes) > 1:
                 shapes_sorted = sorted(shapes, key=RuneLiteObject.distance_from_rect_top , reverse=reverse)
-                self.mouse.move_to(shapes_sorted[int(rd.fancy_normal_sample(0,1))].scale(3,3).random_point(), mouseSpeed = "fastest")
+                self.mouse.move_to(shapes_sorted[0].scale(3,3).random_point(), mouseSpeed = "fastest")
             else:
                 self.mouse.move_to(shapes[0].scale(3,3).random_point(), mouseSpeed = "fastest")
 
@@ -1130,7 +1164,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             # Sort the cyan tiles based on their distance from the top-center
             if len(shapes) > 1:
                 shapes_sorted = sorted(shapes, key=RuneLiteObject.distance_from_rect_left , reverse=reverse)
-                self.mouse.move_to(shapes_sorted[int(rd.fancy_normal_sample(0,1))].scale(3,3).random_point(), mouseSpeed = "fastest")
+                self.mouse.move_to(shapes_sorted[0].scale(3,3).random_point(), mouseSpeed = "fastest")
             else:
                 self.mouse.move_to(shapes[0].scale(3,3).random_point(), mouseSpeed = "fastest")
 

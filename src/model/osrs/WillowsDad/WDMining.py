@@ -210,20 +210,6 @@ class OSRSWDMining(WillowsDadBot):
                 None"""
         # self.open_bank()
         # self.close_bank()
-
-
-    def is_Mining(self):
-        """
-        This will check if the player is currently woodcutting.
-        Returns: boolean
-        Args: None
-        """
-        # get the current player animation
-        Mining_animation_list = [animation.MINING_ADAMANT_PICKAXE, animation.MINING_BLACK_PICKAXE, animation.MINING_BRONZE_PICKAXE, animation.MINING_DRAGON_PICKAXE, animation.MINING_IRON_PICKAXE, animation.MINING_MITHRIL_PICKAXE, animation.MINING_RUNE_PICKAXE, animation.MINING_STEEL_PICKAXE]
-        current_animation = self.api_m.get_animation_id()
-
-        # check if the current animation is woodcutting
-        return current_animation in Mining_animation_list
         
 
     def check_special(self):

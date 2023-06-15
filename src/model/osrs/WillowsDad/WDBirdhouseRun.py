@@ -70,6 +70,8 @@ class OSRSWDBirdhouseRun(WillowsDadBot):
             # I wrap the whole bot in a try catch so that if there is an exception, it will be caught and the bot will retry, or stop and print exception if it fails too many times
             try:
                 self.take_birdhouse_break()
+                self.logout()
+                self.stop()
 
                 
             except Exception as e: # catch exceptions, no changes needed unless you don't want a try catch

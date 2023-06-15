@@ -155,10 +155,12 @@ class GeometryTesting(WillowsDadBot):
             # self.mouse.move_to(bank.center())
             # self.mouse.click()
             # time.sleep(1)
+            self.open_bank()
+            seeds = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("Hammerstone_seeds.png") ,self.win.game_view)
+            self.mouse.move_to(seeds.get_center())
+            self.right_click_select("Withdraw-1", clr.WHITE)
+            self.close_bank()
 
-            obj = self.win.game_view.scale(scale_width=.5, anchor_x=.7)
-            self.log_msg(f"{tig.getEquippedWeapon()}")
-            time.sleep(3)
             # x = .1
 
             # while True:
