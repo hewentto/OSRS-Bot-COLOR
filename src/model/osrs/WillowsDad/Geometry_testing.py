@@ -155,11 +155,8 @@ class GeometryTesting(WillowsDadBot):
             # self.mouse.move_to(bank.center())
             # self.mouse.click()
             # time.sleep(1)
-            self.open_bank()
-            seeds = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("Hammerstone_seeds.png") ,self.win.game_view)
-            self.mouse.move_to(seeds.get_center())
-            self.right_click_select("Withdraw-1", clr.WHITE)
-            self.close_bank()
+            self.walk_vertical(color=clr.YELLOW, direction=-1)
+            self.walk_vertical(color=clr.PINK, direction=1)
 
             # x = .1
 

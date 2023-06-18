@@ -1,6 +1,6 @@
 import datetime
 import time
-
+from tkinter import *
 import cv2
 from model.osrs.osrs_bot import OSRSBot
 import utilities.color as clr
@@ -411,6 +411,32 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         return
 
 
+    def sign_in(self):
+        """Will sign in to the game form the "existing user or new user" screen. It is up to you to 
+        wait for the login to complete."""
+
+        existing_user = self.wait_until_img(self.WILLOWSDAD_IMAGES.joinpath("existing_user.png"), self.win.rectangle())
+
+        self.mouse.move_to(existing_user.random_point())
+        self.mouse.click()
+
+        time.sleep(self.random_sleep_length())
+        # type in password
+        pag.write(self.password, interval=self.random_sleep_length() / 3)
+
+        # press enter to login
+        pag.press('enter')
+
+        # get the current time as the start time
+        start_time = time.time()
+
+        click_to_play = self.wait_until_img(self.WILLOWSDAD_IMAGES.joinpath("click_to_play.png"), self.win.rectangle())
+        self.mouse.move_to(click_to_play.random_point())
+        self.mouse.click()
+
+        return
+
+
     def is_inv_empty(self):
         """
         Checks if inventory is empty.
@@ -424,7 +450,15 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             return False
         return True
     
-    
+
+    def get_first_occurence(self, img_path:Path):
+        """Returns the first occurence of an image in the inventory."""
+        for slot in self.win.inventory_slots:
+            if found := imsearch.search_img_in_rect(img_path, slot, confidence=.9):
+                return slot
+        return None
+
+
     def is_inv_full(self):
         """
         Checks if inventory is full.
@@ -607,7 +641,11 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
 
 
     def is_idle(self):
-        return bool(ocr.find_text("You", self.win.chat.scale(scale_height=0.37, scale_width=1, anchor_y=1, anchor_x=0), ocr.PLAIN_12, clr.Color([239, 16, 32])))
+        return self.check_last_message("You", clr.Color([239, 16, 32]))
+
+
+    def check_last_message(self, text:str, color:clr):
+        return bool(ocr.find_text(text, self.win.chat.scale(scale_height=0.37, scale_width=1, anchor_y=1, anchor_x=0), ocr.PLAIN_12, color))
 
 
     def withdraw_items(self, items: Union[Path, List[Path]], count=1, first_found = False) -> bool:
@@ -724,10 +762,10 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
 
 
     def check_run(self):
-        run_energy = self.get_run_energy
+        run_energy = self.get_run_energy()
         if run_energy < 50:
             return
-        elif rd.random_chance(propability=run_energy/100):
+        elif rd.random_chance(probability=run_energy/100):
             run = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("run_enabled.png"), self.win.run_orb.scale(3,3))
             if run is None:
                 self.mouse.move_to(self.win.run_orb.random_point())
@@ -839,30 +877,127 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         self.mouse.move_to(found[0].random_point())
         self.mouse.click()
 
-    
+
+    def check_if_worn(self, img_path:Path):
+        """This will check if the given image is worn"""
+
+        # open worn equipment
+        self.mouse.move_to(self.win.cp_tabs[4].random_point())
+        self.mouse.click()
+
+        # find image in worn equipment
+        item = imsearch.search_img_in_rect(img_path, self.win.control_panel)
+
+        self.mouse.move_to(self.win.cp_tabs[3].random_point())
+        self.mouse.click()
+
+        if item is None:
+            return False
+        return True
+
+
+    def get_UandP(self):
+        top = Tk()
+        top.title("User Login")  # Setting the window title
+
+        explain_label = Label(top, text="Please enter your username and password for the bot to use: ")
+        explain_label.grid(row=0, column=0, columnspan=2)
+
+        L1 = Label(top, text="Username")
+        L1.grid(row=1, column=0)
+        E1 = Entry(top, bd=5)
+        E1.grid(row=1, column=1)
+        E1.focus_set()
+
+        L2 = Label(top, text="Password")
+        L2.grid(row=2, column=0)
+        E2 = Entry(top, bd=5, show="*")
+        E2.grid(row=2, column=1)
+
+        B = Button(top, text ="Submit", command = lambda: self.save_credentials(E1, E2, top))
+        B.grid(row=3, column=1)
+
+        top.bind('<Return>', lambda event: self.save_credentials(E1, E2, top))
+
+        top.lift()
+        top.focus_force()
+        top.attributes('-topmost', True)
+        top.after(100, lambda: top.attributes('-topmost', False)) 
+        
+        top.mainloop()
+
+    def save_credentials(self, E1, E2, top):
+        self.username = E1.get()
+        self.password = E2.get()
+        print("Username: ", self.username)
+        print("Password: ", self.password)
+        top.destroy()
+
+
     def take_birdhouse_break(self):
         """This will complete a birdhouse run
         Args:
             None
             Returns:"""
-        
         # setup
         birdhouse_seeds = [self.WILLOWSDAD_IMAGES.joinpath("Hammerstone_seeds.png")]
         birdhouse_items = [self.WILLOWSDAD_IMAGES.joinpath("Yew_birdhouse.png")]
+        digsite_pendant = self.WILLOWSDAD_IMAGES.joinpath("Digsite_pendant.png")
+        digsite_pendant_inventory = self.WILLOWSDAD_IMAGES.joinpath("Digsite_pendant_inventory.png")
+        need_to_equip = False       
+
         # birdhosues, seeds, digsite pendant
         self.face_north()
+
+        # check if digsite pendant is worn
+        if not self.check_if_worn(digsite_pendant):
+            need_to_equip = True
+
         # banking
         self.open_bank()
         self.check_deposit_5()
         if not self.is_inv_empty():
             self.bank_all()
-        self.withdraw_all(birdhouse_seeds)
-        self.withdraw_items(birdhouse_items, first_found=True)
+        if self.withdraw_all(birdhouse_seeds) is False:
+            self.log_msg("Could not find birdhouse seeds in bank, quitting bot...")
+            self.stop()
+        if self.withdraw_items(birdhouse_items, first_found=True) is False:
+            self.log_msg("Could not find birdhouse in bank, quitting bot...")
+            self.stop()
+        if need_to_equip:
+            found = imsearch.search_img_in_rect(digsite_pendant, self.win.game_view.scale(.5))
+            if found is None:
+                self.log_msg("Could not find digsite pendant in bank, quitting bot...")
+                self.stop()
+            self.mouse.move_to(found.random_point())
+            self.right_click_select("Withdraw-1", clr.WHITE)
+            time.sleep(self.random_sleep_length())
         self.close_bank()
+        time.sleep(self.random_sleep_length())
 
-        # teleport to digsite
+        # if we need to equip, find it in inventory and click it
+        if need_to_equip:
+            # find and click digspite pendant
+            found = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("Digsite_pendant.png"), self.win.control_panel)
+            if found is None:
+                self.log_msg("Could not find digsite pendant in controlpanel, please check code, report to developer.")
+                self.stop()
+            self.mouse.move_to(found.random_point())
+            self.mouse.click()
+        time.sleep(self.random_sleep_length())
+
+        # Incase of misclick, lets make sure last message is correct
         self.__teleport_to_digsite()
-        time.sleep(self.random_sleep_length(2, 2.9))
+
+        start_time = time.time()
+        while not self.check_last_message("rub", clr.BLACK):
+            time.sleep(self.random_sleep_length(.4, .6))
+            if time.time() - start_time > 10:
+                self.__teleport_to_digsite()
+                break
+
+        # This waits for the black screen before walking
+        time.sleep(self.random_sleep_length(1, 1.6))
 
         # run to magic mushtree
         self.walk_vertical(color=clr.PINK, direction=1)
@@ -888,21 +1023,21 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
 
     def __walk_to_birdhouse_bank(self):
         # walk vertical to bank
-        self.walk_vertical(color=clr.YELLOW, direction=-1)
+        self.walk_horizontal(color=clr.YELLOW, direction=-1)
 
 
     def __do_meadows_run(self):
         # run to first birdhouse
-        self.run_to_birdhouse(clr.PINK, "horizontal", 1)
+        self.__run_to_birdhouse(clr.PINK, "vertical", 1)
 
         # load seeds
-        self.load_seeds(clr.PINK)
+        self.__load_seeds(clr.PINK)
 
         # run to second birdhouse
-        self.run_to_birdhouse(clr.BLUE, "vertical", -1)
+        self.__run_to_birdhouse(clr.BLUE, "vertical", -1)
 
         # load seeds
-        self.load_seeds(clr.BLUE)
+        self.__load_seeds(clr.BLUE)
 
 
     def __teleport_to_meadows(self):
@@ -928,18 +1063,18 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
 
     def __do_verdant_valley_run(self):
         # run to first birdhouse
-        self.run_to_birdhouse(clr.PINK, "horizontal", 1)
+        self.__run_to_birdhouse(clr.PINK, "horizontal", 1)
 
         # load seeds
-        self.load_seeds(clr.PINK)
+        self.__load_seeds(clr.PINK)
 
         # run to second birdhouse
-        self.run_to_birdhouse(clr.BLUE, "horizontal", 1)
+        self.__run_to_birdhouse(clr.BLUE, "horizontal", 1)
 
         # load seeds
-        self.load_seeds(clr.BLUE)
+        self.__load_seeds(clr.BLUE)
 
-    def run_to_birdhouse(self, color, direction, dir_value):
+    def __run_to_birdhouse(self, color, direction, dir_value):
         if direction == "horizontal":
             self.walk_horizontal(color=color, direction=dir_value)
         elif direction == "vertical":
@@ -960,12 +1095,13 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         time.sleep(self.random_sleep_length())
         self.mouse.move_to(self.get_nearest_tag(color).random_point())
         while not self.mouse.click(check_red_click=True):
+            self.wait_until_color(color=color)
             self.mouse.move_to(self.get_nearest_tag(color).random_point())
 
         time.sleep(self.random_sleep_length())
 
 
-    def load_seeds(self, color):
+    def __load_seeds(self, color):
         seeds = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("Hammerstone_seeds.png"), self.win.control_panel)
         if seeds is None:
             self.log_msg("Could not find seeds, quitting bot...")
@@ -1021,8 +1157,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             self.log_msg("Could not find digsite pendant in controlpanel, please check code, report to developer.")
             self.stop()
         self.mouse.move_to(digsite_pendant.random_point())
-        self.mouse.click()
-        
+        self.right_click_select("Fossil Island", clr.WHITE)
         time.sleep(self.random_sleep_length() * 2)
         self.mouse.move_to(self.win.cp_tabs[3].random_point())
         self.mouse.click()
@@ -1161,7 +1296,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             
             reverse = direction != 1
 
-            # Sort the cyan tiles based on their distance from the top-center
+            # Sort the cyan tiles based on their distance from the left-center
             if len(shapes) > 1:
                 shapes_sorted = sorted(shapes, key=RuneLiteObject.distance_from_rect_left , reverse=reverse)
                 self.mouse.move_to(shapes_sorted[0].scale(3,3).random_point(), mouseSpeed = "fastest")
@@ -1179,9 +1314,23 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         time_start = time.time()
         while True:
             if time.time() - time_start > timeout:
-                self.log_msg(f"We've been waiting for {timeout} seconds, something is wrong...stopping.")
+                self.log_msg(f"We've been waiting for {timeout} seconds for color: {color}, something is wrong...stopping.")
                 self.stop()
             if found := self.get_nearest_tag(color):
                 break
             time.sleep(self.random_sleep_length())
         return
+    
+
+    def wait_until_img(self, img: Path, screen: Rectangle, timeout: int = 10):
+        """this will wait till img shows up in screen"""
+        time_start = time.time()
+        while True:
+            time.sleep(self.random_sleep_length())
+            if found :=imsearch.search_img_in_rect(img, screen):
+                break
+            if time.time() - time_start > timeout:
+                self.log_msg(f"We've been waiting for {timeout} seconds, something is wrong...stopping.")
+                self.stop()
+        return found
+    

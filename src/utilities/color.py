@@ -40,15 +40,15 @@ def isolate_colors(image: cv2.Mat, colors: Union[Color, List[Color]]) -> cv2.Mat
 
 """Solid colors"""
 BLACK = Color([0, 0, 0])
-BLUE = Color([0, 0, 255])
+BLUE = Color(lower=[0, 0, 200], upper=[50, 50, 255])
 CYAN = Color([0, 255, 255])
 GREEN = Color([0, 255, 0])
 ORANGE = Color([255, 144, 64])
-PINK = Color([255, 0, 231])
+PINK = Color(lower=[200, 0, 180], upper=[255, 50, 255])
 PURPLE = Color([170, 0, 255])
 RED = Color([255, 0, 0])
 WHITE = Color([255, 255, 255])
-YELLOW = Color([255, 255, 0])
+YELLOW = Color(lower=[200, 200, 0], upper=[255, 255, 50])
 
 """Colors for use with semi-transparent text"""
 OFF_CYAN = Color([0, 200, 200], [70, 255, 255])

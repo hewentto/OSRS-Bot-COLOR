@@ -1,3 +1,4 @@
+import datetime
 import time
 import traceback
 from model.osrs.WillowsDad.WillowsDad_bot import WillowsDadBot
@@ -8,13 +9,14 @@ import utilities.random_util as rd
 import utilities.imagesearch as imsearch
 import pyautogui as pag
 from utilities.geometry import RuneLiteObject
+import random
 
 
 
 class OSRSWDBirdhouseRun(WillowsDadBot):
     def __init__(self):
         bot_title = "WD Birdhouse Run"
-        description = """Will sign in and do birdhouse runs."""
+        description = """Will sign in and do birdhouse runs and then sign out."""
         super().__init__(bot_title=bot_title, description=description)
         # Set option variables below (initial value is only used during UI-less testing)
         self.running_time = 200
@@ -22,7 +24,7 @@ class OSRSWDBirdhouseRun(WillowsDadBot):
         self.afk_train = True
         self.delay_min =0.37
         self.delay_max = .67
-
+        self.loops = 10
 
 
     def create_options(self):
@@ -32,7 +34,9 @@ class OSRSWDBirdhouseRun(WillowsDadBot):
         see, and the possible values the user can select. The key is used in the save_options function to
         unpack the dictionary of options after the user has selected them.
         """
-        super().create_options()
+        self.options_builder.add_slider_option("How many loops?", "loops", 1, 100, 10)
+        self.options_builder.add_slider_option("delay_min", "How long to take between actions (min) (MiliSeconds)?", 300,1200)
+        self.options_builder.add_slider_option("delay_max", "How long to take between actions (max) (MiliSeconds)?", 350,1200)
 
     def save_options(self, options: dict):  # sourcery skip: for-index-underscore
         """
@@ -40,13 +44,15 @@ class OSRSWDBirdhouseRun(WillowsDadBot):
         If any unexpected options are found, log a warning. If an option is missing, set the options_set flag to
         False.
         """
-        super().save_options(options)
         for option in options:
+            if option == "loops":
+                self.loops = options[option]
+            elif option == "delay_min":
+                self.delay_min = options[option]
+            elif option == "delay_max":
+                self.delay_max = options[option]
             break # check options and assign to variables
 
-        self.log_msg(f"Running time: {self.running_time} minutes.")
-        self.log_msg(f"Bot will{'' if self.take_breaks else ' not'} take breaks.")
-        self.log_msg(f"Bot will{'' if self.afk_train else ' not'} train like you're afk on another tab.")
         self.log_msg(f"Bot will wait between {self.delay_min} and {self.delay_max} seconds between actions.")
         self.log_msg("Options set successfully.")
         self.options_set = True
@@ -59,42 +65,35 @@ class OSRSWDBirdhouseRun(WillowsDadBot):
         # Setup variables
         self.setup()
         # Main loop
-        while time.time() - self.start_time < self.end_time:
+        while self.count < self.loops:
 
-            runtime = int(time.time() - self.start_time)
-            minutes_since_last_break = int((time.time() - self.last_break) / 60)
-            seconds = int(time.time() - self.last_break) % 60
-            percentage = (self.multiplier * .01)  # this is the percentage chance of a break
-            self.roll_chance_passed = False
+            self.take_birdhouse_break()
 
-            # I wrap the whole bot in a try catch so that if there is an exception, it will be caught and the bot will retry, or stop and print exception if it fails too many times
-            try:
-                self.take_birdhouse_break()
-                self.logout()
-                self.stop()
+            # lets make sure we're by bank before signing out
+            self.wait_until_color(clr.YELLOW)
 
-                
-            except Exception as e: # catch exceptions, no changes needed unless you don't want a try catch
-                self.log_msg(f"Exception: {e}")
-                self.loop_count += 1
-                if self.loop_count > 5:
-                    self.log_msg("Too many exceptions, stopping.")
-                    self.log_msg(f"Last exception: {e}")
-                    # print out stack trace
-                    stack_trace = traceback.format_exc()
-                    self.log_msg(stack_trace)
-                    self.stop()
-                continue
-     
+            self.logout()
+            
+            # sleeping for 56minutes to an hour
+            self.log_msg(f"Run {self.count} of {self.loops} complete.")
+
+            self.switch_window()
+
+            self.take_break(3360, 3600)
+
+            self.switch_window()
+
+            self.sign_in()
+
+            self.wait_until_color(clr.YELLOW)
+
+            self.count += 1
+
+            # print out how many runs we've done
+
                 
             # -- End bot actions --
-            self.loop_count = 0
-            if self.take_breaks:
-                self.check_break(runtime, percentage, minutes_since_last_break, seconds)
-            current_progress = round((time.time() - self.start_time) / self.end_time, 2)
-            if current_progress != round(self.last_progress, 2):
-                self.update_progress((time.time() - self.start_time) / self.end_time)
-                self.last_progress = round(self.progress, 2)
+            self.update_progress(self.count / self.loops)
 
         self.update_progress(1)
         self.log_msg("Finished.")
@@ -110,3 +109,26 @@ class OSRSWDBirdhouseRun(WillowsDadBot):
             Returns:
                 None"""
         super().setup()
+        self.get_UandP()
+        self.count = 0
+
+
+    def take_break(self, min_seconds: int = 1, max_seconds: int = 30, fancy: bool = False):
+        """
+        Takes a break for a random amount of time.
+        Args:
+            min_seconds: minimum amount of time the bot could rest
+            max_seconds: maximum amount of time the bot could rest
+            fancy: if True, the randomly generated value will be from a truncated normal distribution
+                with randomly selected means. This may produce more human results.
+        """
+        self.log_msg("Taking a break...")
+        if fancy:
+            length = rd.fancy_normal_sample(min_seconds, max_seconds)
+        else:
+            length = random.uniform(min_seconds, max_seconds)
+        length = round(length)
+        end_time = datetime.datetime.now() + datetime.timedelta(seconds=length)
+        self.log_msg(f"Signing back in at {end_time.strftime('%I:%M:%S %p')}.", overwrite=True)
+        time.sleep(length)
+        self.log_msg(f"Done taking {length} second break.", overwrite=True)
