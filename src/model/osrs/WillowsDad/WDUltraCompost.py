@@ -72,7 +72,7 @@ class OSRSWDUltraCompostMaker(WillowsDadBot):
                     self.open_bank()
                     time.sleep(self.random_sleep_length()/2)
                     self.check_deposit_all()
-                    self.deposit_items(deposit_slots, self.deposit_ids)
+                    self.deposit_items(deposit_slots)
                     self.sleep(self.random_sleep_length()/2)
                     suplies_left = self.withdraw_items(self.withdraw_paths[0])
                     if not suplies_left:
@@ -161,15 +161,6 @@ class OSRSWDUltraCompostMaker(WillowsDadBot):
             self.is_focused = False
             return False
     
-    
-    def random_sleep_length(self, delay_min=0, delay_max=0):
-        """Returns a random float between min and max"""
-        if delay_min == 0:
-            delay_min = self.delay_min
-        if delay_max == 0:
-            delay_max = self.delay_max
-        return rd.fancy_normal_sample(delay_min, delay_max)
-    
 
     def make_compost(self):
         """
@@ -184,17 +175,12 @@ class OSRSWDUltraCompostMaker(WillowsDadBot):
 
         # move mouse to each item and click
         for item in unique_items:
-            self.mouse.move_to(self.win.inventory_slots[item].random_point())
+            self.mouse.move_to(self.win.inventory_slots[item].scale(.68, .68).random_point())
+            time.sleep(self.random_sleep_length(.21, .39))
             self.mouse.click()
-            time.sleep(self.random_sleep_length())
+            time.sleep(self.random_sleep_length(.21, .39))
 
-        item_found = imsearch.search_img_in_rect(self.text_box_ultracompost, self.win.chat)
-        search_time = time.time()
-        while not item_found:
-            item_found = imsearch.search_img_in_rect(self.text_box_ultracompost, self.win.chat)
-            if time.time() - search_time > 2:
-                self.log_msg("Error finding ultracompost in chat box, stopping.")
-                self.stop()
-            time.sleep(.1)
-        time.sleep(self.random_sleep_length() * 2)
+        self.wait_until_img(self.text_box_ultracompost, self.win.chat, timeout=3)
+        time.sleep(self.random_sleep_length())
+
         pag.press("space")

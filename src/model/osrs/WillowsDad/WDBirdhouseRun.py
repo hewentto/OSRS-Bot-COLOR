@@ -25,6 +25,7 @@ class OSRSWDBirdhouseRun(WillowsDadBot):
         self.delay_min =0.37
         self.delay_max = .67
         self.loops = 10
+        self.wait_time = 0
 
 
     def create_options(self):
@@ -34,9 +35,10 @@ class OSRSWDBirdhouseRun(WillowsDadBot):
         see, and the possible values the user can select. The key is used in the save_options function to
         unpack the dictionary of options after the user has selected them.
         """
-        self.options_builder.add_slider_option("How many loops?", "loops", 1, 100, 10)
+        self.options_builder.add_slider_option( "loops", "How many loops?", 1, 50)
         self.options_builder.add_slider_option("delay_min", "How long to take between actions (min) (MiliSeconds)?", 300,1200)
         self.options_builder.add_slider_option("delay_max", "How long to take between actions (max) (MiliSeconds)?", 350,1200)
+        self.options_builder.add_slider_option("wait_time", "Wait time before first run (minutes)?", 0, 50)
 
     def save_options(self, options: dict):  # sourcery skip: for-index-underscore
         """
@@ -48,10 +50,11 @@ class OSRSWDBirdhouseRun(WillowsDadBot):
             if option == "loops":
                 self.loops = options[option]
             elif option == "delay_min":
-                self.delay_min = options[option]
+                self.delay_min = options[option]/1000
             elif option == "delay_max":
-                self.delay_max = options[option]
-            break # check options and assign to variables
+                self.delay_max = options[option]/1000
+            elif option == "wait_time":
+                self.wait_time = options[option]*60
 
         self.log_msg(f"Bot will wait between {self.delay_min} and {self.delay_max} seconds between actions.")
         self.log_msg("Options set successfully.")
@@ -64,9 +67,14 @@ class OSRSWDBirdhouseRun(WillowsDadBot):
         """
         # Setup variables
         self.setup()
+
         # Main loop
         while self.count < self.loops:
 
+            self.count += 1
+
+            if self.get_run_energy() > 60:
+                self.check_run()
             self.take_birdhouse_break()
 
             # lets make sure we're by bank before signing out
@@ -87,7 +95,6 @@ class OSRSWDBirdhouseRun(WillowsDadBot):
 
             self.wait_until_color(clr.YELLOW)
 
-            self.count += 1
 
             # print out how many runs we've done
 
@@ -111,6 +118,14 @@ class OSRSWDBirdhouseRun(WillowsDadBot):
         super().setup()
         self.get_UandP()
         self.count = 0
+
+        if self.wait_time > 0:
+            self.log_msg(f"Waiting {self.wait_time / 60} minutes before starting.")
+            self.logout()
+            self.take_break(self.wait_time, self.wait_time)
+            self.sign_in()
+            self.wait_until_color(clr.YELLOW)
+            self.wait_time = 0
 
 
     def take_break(self, min_seconds: int = 1, max_seconds: int = 30, fancy: bool = False):

@@ -46,7 +46,7 @@ class OSRSWDWoodcutting(WillowsDadBot):
         for option in options:
             if option == "log_type":
                 if options[option] == "Normal":
-                    self.log_type = ids.logs
+                    self.log_type = ids.LOGS
                 elif options[option] == "Oak":
                     self.log_type = ids.OAK_LOGS
                 elif options[option] == "Willow":

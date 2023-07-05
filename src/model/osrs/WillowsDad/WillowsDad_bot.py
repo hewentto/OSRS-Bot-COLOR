@@ -17,6 +17,7 @@ from pathlib import Path
 import utilities.game_launcher as launcher
 from typing import Union, List
 import utilities.ocr as ocr
+from .Users import User
 
 
 # New class WillowsDad_bot
@@ -28,6 +29,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
 
     def __init__(self, bot_title, description) -> None:
         super().__init__(bot_title, description)
+        self.take_birdhouse_breaks = False
 
 
     def create_options(self):
@@ -92,6 +94,10 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         self.safety_squares = self.get_all_tagged_in_rect(self.win.game_view ,clr.CYAN)
         self.deposit_all_red_button = None
         self.exit_btn = None
+
+        if self.take_birdhouse_breaks:
+            self.user = User()
+            self.next_birdhouse_break = time.time()
 
 
 
@@ -244,13 +250,13 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         time_searching = time.time()
         while True:
             self.deposit_all_red_button = imsearch.search_img_in_rect(
-                deposit_all_red, self.win.game_view.scale(scale_height=.2, scale_width=.5, anchor_y=.8)
+                deposit_all_red, self.win.game_view.scale(scale_height=.2, anchor_y=.8)
             )
             if self.deposit_all_red_button:
                 return   # We found deposit all is already selected, return.
             # We now check several times within 1 second for deposit all grey, if we find it, click it and return.
             elif deposit_all_grey_button := imsearch.search_img_in_rect(
-                deposit_all_grey, self.win.game_view.scale(scale_height=.2, scale_width=.5, anchor_y=.8)
+                deposit_all_grey, self.win.game_view.scale(scale_height=.2, anchor_y=.8)
             ):
                 self.mouse.move_to(deposit_all_grey_button.random_point())
                 self.mouse.click()
@@ -274,13 +280,13 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         time_searching = time.time()
         while True:
             self.deposit_all_red_button = imsearch.search_img_in_rect(
-                deposit_5_red, self.win.game_view.scale(scale_height=.2, scale_width=.5, anchor_y=.8)
+                deposit_5_red, self.win.game_view.scale(scale_height=.2, anchor_y=.8)
             )
             if self.deposit_all_red_button:
                 return   # We found deposit all is already selected, return.
             # We now check several times within 1 second for deposit all grey, if we find it, click it and return.
             elif deposit_all_grey_button := imsearch.search_img_in_rect(
-                deposit_5_grey, self.win.game_view.scale(scale_height=.2, scale_width=.5, anchor_y=.8)
+                deposit_5_grey, self.win.game_view.scale(scale_height=.2, anchor_y=.8)
             ):
                 self.mouse.move_to(deposit_all_grey_button.random_point())
                 self.mouse.click()
@@ -789,7 +795,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         # Loop until the time limit is reached
         while (time.time() < end_time):
             # Check if the image is found in the game view
-            if deposit_btn := imsearch.search_img_in_rect(deposit_all_img, self.win.game_view.scale(scale_height=.2, scale_width=.5, anchor_y=.8)):
+            if deposit_btn := imsearch.search_img_in_rect(deposit_all_img, self.win.game_view.scale(scale_height=.2, anchor_y=.8)):
                 return True
 
             # Sleep for a short time to avoid excessive CPU usage
@@ -812,7 +818,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         # Loop until the time limit is reached
         while (time.time() < end_time):
             # Check if the image is found in the game view, and move mouse and click if it is
-            if deposit_btn := imsearch.search_img_in_rect(deposit_all_img, self.win.game_view.scale(scale_height=.2, scale_width=.5, anchor_y=.8)):
+            if deposit_btn := imsearch.search_img_in_rect(deposit_all_img, self.win.game_view.scale(scale_height=.2, anchor_y=.8)):
                 self.mouse.move_to(deposit_btn.random_point())
                 self.mouse.click()
                 return
@@ -826,7 +832,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
 
     
     def check_withdraw_x(self, amount):
-        if withdraw_grey := imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("deposit_x_grey.png"), self.win.game_view.scale(.5,.5, anchor_y=.75), confidence=.1):
+        if withdraw_grey := imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("deposit_x_grey.png"), self.win.game_view.scale(1, .5, anchor_y=.75), confidence=.1):
             self.mouse.move_to(withdraw_grey.scale(.5,.5).random_point())
             self.sleep(self.random_sleep_length())
             if self.mouseover_text(f"{amount}", color=clr.OFF_WHITE):
@@ -834,7 +840,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             else:
                 self.log_msg(f"Set withdraw amount to {amount}.")
                 self.stop()
-        elif withdraw_red := imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("deposit_x_red.png"), self.win.game_view.scale(.5,.5, anchor_y=.75)):
+        elif withdraw_red := imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("deposit_x_red.png"), self.win.game_view.scale(1,.5, anchor_y=.75)):
             self.mouse.move_to(withdraw_red.scale(.3,.3).random_point())
             self.sleep(self.random_sleep_length())
             if self.mouseover_text(f"{amount}", color=clr.OFF_WHITE):
@@ -849,6 +855,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
     def right_click_select(self, text:str, color:clr):
         """Right clicks on the screen and selects the option with the given text"""
         self.mouse.right_click()
+        time.sleep(self.random_sleep_length(.2, .46))
 
         # Get the current mouse position and create a Point from it
         mouse_pos = Point(*pag.position())
@@ -874,7 +881,9 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             self.log_msg(f"Could not find text {text} in right click menu, quitting bot...")
             self.stop()
 
-        self.mouse.move_to(found[0].random_point())
+        self.mouse.move_to(found[0].scale(.7,.7).random_point())
+        time.sleep(self.random_sleep_length(.22,.42))
+
         self.mouse.click()
 
 
@@ -929,8 +938,6 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
     def save_credentials(self, E1, E2, top):
         self.username = E1.get()
         self.password = E2.get()
-        print("Username: ", self.username)
-        print("Password: ", self.password)
         top.destroy()
 
 
@@ -943,15 +950,14 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         birdhouse_seeds = [self.WILLOWSDAD_IMAGES.joinpath("Hammerstone_seeds.png")]
         birdhouse_items = [self.WILLOWSDAD_IMAGES.joinpath("Yew_birdhouse.png")]
         digsite_pendant = self.WILLOWSDAD_IMAGES.joinpath("Digsite_pendant.png")
-        digsite_pendant_inventory = self.WILLOWSDAD_IMAGES.joinpath("Digsite_pendant_inventory.png")
-        need_to_equip = False       
+        self.need_to_equip = False       
 
         # birdhosues, seeds, digsite pendant
         self.face_north()
 
         # check if digsite pendant is worn
         if not self.check_if_worn(digsite_pendant):
-            need_to_equip = True
+            self.need_to_equip = True
 
         # banking
         self.open_bank()
@@ -964,19 +970,15 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         if self.withdraw_items(birdhouse_items, first_found=True) is False:
             self.log_msg("Could not find birdhouse in bank, quitting bot...")
             self.stop()
-        if need_to_equip:
-            found = imsearch.search_img_in_rect(digsite_pendant, self.win.game_view.scale(.5))
-            if found is None:
-                self.log_msg("Could not find digsite pendant in bank, quitting bot...")
-                self.stop()
-            self.mouse.move_to(found.random_point())
-            self.right_click_select("Withdraw-1", clr.WHITE)
-            time.sleep(self.random_sleep_length())
+
+        # equip digsite pendant
+        self.__check_and_withdraw_pendant(digsite_pendant)
+
         self.close_bank()
         time.sleep(self.random_sleep_length())
 
         # if we need to equip, find it in inventory and click it
-        if need_to_equip:
+        if self.need_to_equip:
             # find and click digspite pendant
             found = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("Digsite_pendant.png"), self.win.control_panel)
             if found is None:
@@ -997,7 +999,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
                 break
 
         # This waits for the black screen before walking
-        time.sleep(self.random_sleep_length(1, 1.6))
+        time.sleep(self.random_sleep_length(1.5, 1.9))
 
         # run to magic mushtree
         self.walk_vertical(color=clr.PINK, direction=1)
@@ -1021,9 +1023,20 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         self.close_bank()
 
 
+    def __check_and_withdraw_pendant(self, digsite_pendant):
+        if self.need_to_equip:
+            found = imsearch.search_img_in_rect(digsite_pendant, self.win.game_view)
+            if found is None:
+                self.log_msg("Could not find digsite pendant in bank, quitting bot...")
+                self.stop()
+            self.mouse.move_to(found.random_point())
+            self.right_click_select("Withdraw-1", clr.WHITE)
+            time.sleep(self.random_sleep_length())
+
+
     def __walk_to_birdhouse_bank(self):
         # walk vertical to bank
-        self.walk_horizontal(color=clr.YELLOW, direction=-1)
+        self.walk_horizontal(color=clr.YELLOW, direction=-1, wait_till_stop=True)
 
 
     def __do_meadows_run(self):
@@ -1078,9 +1091,9 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         if direction == "horizontal":
             self.walk_horizontal(color=color, direction=dir_value)
         elif direction == "vertical":
-            self.walk_vertical(color=color, direction=dir_value)
+            self.walk_vertical(color=color, direction=dir_value, wait_till_stop=True)
         else:
-            return  # Invalid direction
+            raise ValueError("Direction must be horizontal or vertical")
         current_xp = self.get_total_xp()
         birdhouse = self.get_nearest_tag(color)
         self.mouse.move_to(birdhouse.random_point())
@@ -1092,7 +1105,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         while not current_xp < self.get_total_xp():
             time.sleep(self.random_sleep_length())
 
-        time.sleep(self.random_sleep_length())
+        time.sleep(self.random_sleep_length(.8, 1.2))
         self.mouse.move_to(self.get_nearest_tag(color).random_point())
         while not self.mouse.click(check_red_click=True):
             self.wait_until_color(color=color)
@@ -1107,10 +1120,14 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             self.log_msg("Could not find seeds, quitting bot...")
             self.stop()
         self.mouse.move_to(seeds.random_point())
+        time.sleep(self.random_sleep_length())
+
         self.mouse.click()
         time.sleep(self.random_sleep_length())
 
         self.mouse.move_to(self.get_nearest_tag(color).random_point())
+        time.sleep(self.random_sleep_length())
+
         while not self.mouse.click(check_red_click=True):
             seeds = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("Hammerstone_seeds.png"), self.win.control_panel)
             if seeds is None:
@@ -1149,6 +1166,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
 
         # open worn equipment
         self.mouse.move_to(self.win.cp_tabs[4].random_point())
+        time.sleep(self.random_sleep_length(.25, .42))
         self.mouse.click()
 
         # find and click digspite pendant
@@ -1157,9 +1175,12 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             self.log_msg("Could not find digsite pendant in controlpanel, please check code, report to developer.")
             self.stop()
         self.mouse.move_to(digsite_pendant.random_point())
+        time.sleep(self.random_sleep_length(.25, .42))
+
         self.right_click_select("Fossil Island", clr.WHITE)
-        time.sleep(self.random_sleep_length() * 2)
+        time.sleep(self.random_sleep_length(.25, .42))
         self.mouse.move_to(self.win.cp_tabs[3].random_point())
+        time.sleep(self.random_sleep_length(.25, .42))
         self.mouse.click()
 
 
@@ -1171,7 +1192,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             time_looking_for_item = time.time() + 5
             while time.time() < time_looking_for_item and not item_found:
                 # Try several times to find the item
-                item_found = imsearch.search_img_in_rect(item_img, self.win.game_view.scale(scale_width=.5))
+                item_found = imsearch.search_img_in_rect(item_img, self.win.game_view)
                 if item_found:
                     break
             if not item_found:
@@ -1202,7 +1223,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         return all_items_found
 
 
-    def walk_vertical(self, direction: int, color: clr = None, timeout: int = 60, img: Path = None):
+    def walk_vertical(self, direction: int, color: clr = None, timeout: int = 60, img: Path = None, wait_till_stop: bool = False):
         """
         Walks towards or away from a specific color tile in game or image.
         Returns: void
@@ -1230,6 +1251,13 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             if color is not None:
                 # Stop walking if the target color tile is found
                 if found := self.get_nearest_tag(color):
+                    if wait_till_stop:
+                        last_distance = found.distance_from_rect_center()
+                        current_distance = None
+                        while last_distance != current_distance:
+                            time.sleep(self.random_sleep_length())
+                            last_distance = current_distance
+                            current_distance = self.get_nearest_tag(color).distance_from_rect_center()
                     break
 
             # Get all cyan tiles in the game view
@@ -1256,7 +1284,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         return
     
 
-    def walk_horizontal(self, direction: int, color: clr = None, timeout: int = 60, img: Path = None):
+    def walk_horizontal(self, direction: int, color: clr = None, timeout: int = 60, img: Path = None, wait_till_stop: bool = False):
         """
         Walks towards or away from a specific color tile in game or image.
         Returns: void
@@ -1284,6 +1312,13 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             if color is not None:
                 # Stop walking if the target color tile is found
                 if found := self.get_nearest_tag(color):
+                    if wait_till_stop:
+                        last_distance = found.distance_from_rect_center()
+                        current_distance = None
+                        while last_distance != current_distance:
+                            time.sleep(self.random_sleep_length())
+                            last_distance = current_distance
+                            current_distance = self.get_nearest_tag(color).distance_from_rect_center()
                     break
 
             # Get all cyan tiles in the game view
@@ -1334,3 +1369,71 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
                 self.stop()
         return found
     
+
+    def is_idle2(self):
+        idle_threshold = 0.3  # Adjust the threshold as needed
+        previous_screenshot = self.win.game_view.scale(.02, .04, 0.505, 0.495).screenshot()
+        consecutive_idle_count = 0
+
+        for _ in range(2):
+            current_screenshot = self.win.game_view.scale(.02, .04, 0.505, 0.495).screenshot()
+
+            if previous_screenshot is not None:
+                difference = self.is_animating(previous_screenshot, current_screenshot)
+                if difference < idle_threshold:
+                    consecutive_idle_count += 1
+                if consecutive_idle_count == 2:
+                    self.log_msg("Idle", overwrite=True)
+                    return True
+
+            previous_screenshot = current_screenshot
+            time.sleep(0.3)
+
+        self.log_msg("Not Idle", overwrite=True)
+        return False
+
+
+    def wait_until_idle(self):
+        idle_threshold = 0.3  # Adjust the threshold as needed
+        consecutive_idle_frames = 2  # Number of consecutive frames with a small difference to consider as idle
+
+        previous_screenshot = None
+        consecutive_idle_count = 0
+
+        while consecutive_idle_count < consecutive_idle_frames:
+            current_screenshot = self.win.game_view.scale(.02, .04, 0.505, 0.495).screenshot()
+
+            if previous_screenshot is not None:
+                difference = self.is_animating(previous_screenshot, current_screenshot)
+                if difference < idle_threshold:
+                    consecutive_idle_count += 1
+                else:
+                    consecutive_idle_count = 0
+                    self.log_msg("Not Idle", overwrite=True)
+
+            previous_screenshot = current_screenshot
+            time.sleep(0.3)
+
+        self.log_msg("Idle", overwrite=True)
+
+
+
+    def is_animating(self, previous_screenshot, current_screenshot):
+          """Created by @Gang on the OSBC discord server"""
+
+          gray_img1 = cv2.cvtColor(previous_screenshot, cv2.COLOR_BGR2GRAY)
+          gray_img2 = cv2.cvtColor(current_screenshot, cv2.COLOR_BGR2GRAY)
+
+          diff = cv2.absdiff(gray_img1, gray_img2)
+
+          _, threshold = cv2.threshold(diff, 30, 255, cv2.THRESH_BINARY)
+
+          contours, _ = cv2.findContours(threshold, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+          total_area = 0
+          for contour in contours:
+              total_area += cv2.contourArea(contour)
+
+          percentage_diff = (total_area / previous_screenshot.size) * 100
+
+          return percentage_diff

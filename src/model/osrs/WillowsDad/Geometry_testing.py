@@ -2,7 +2,6 @@ import imghdr
 import time
 import traceback
 import cv2
-
 import numpy as np
 from model.osrs.WillowsDad.WillowsDad_bot import WillowsDadBot
 import utilities.api.item_ids as ids
@@ -92,83 +91,9 @@ class GeometryTesting(WillowsDadBot):
         """
         self.start_time = time.time()
         self.end_time = self.start_time + self.running_time * 60
-        # Main loop
         while time.time() - self.start_time < self.end_time:
 
-            # # get nearest cyan tag and move mouse to the center of it
-            # self.log_msg("Unscaled center")
-            # object = self.get_nearest_tag(clr.CYAN)
-            # self.mouse.move_to(object.center())
-            # self.log_msg("Scaled center")
-            # time.sleep(1)
-            # object = object.scale_and_center(2, 2)
-            # self.mouse.move_to(object.center())
-            # time.sleep(1)
-
-            # # get nearest cyan tag and move mouse to the top-left corner of it
-            # self.log_msg("Object edges unscaled")
-            # object2 = self.get_nearest_tag(clr.CYAN)
-            # self.mouse.move_to((object2._x_max, object2._y_max))
-            # time.sleep(1)
-
-            # # scale the object and move mouse to the top-left corner of the scaled object
-            # object3 = object2.scale_and_center(2, 2)
-            # self.log_msg("Object edges scaled")
-            # self.mouse.move_to((object3._x_max, object3._y_max))
-            # time.sleep(1)
-
-
-            # Install pyautogui if you haven't already
-            # pip install pyautogui
-
-            # Take a screenshot
-            # screenshot = pyautogui.screenshot()
-            # screenshot = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
-
-            # # Create the first RuneLiteObject
-            # obj1 = self.get_nearest_tag(clr.CYAN)
-            # rect1 = self.win.game_view.screenshot
-
-            # # Create a copy of the original object
-            # obj2 = RuneLiteObject(obj1._x_min, obj1._x_max, obj1._y_min, obj1._y_max, obj1._width, obj1._height, obj1._center, obj1._axis)
-
-            # # Draw the first rectangle (blue) on the screenshot
-            # cv2.rectangle(screenshot, (obj1._x_min, obj1._y_min), (obj1._x_max, obj1._y_max), (255, 0, 0), 2)
-
-            # # Display the screenshot with the original object
-            # cv2.imshow("Original Object", screenshot)
-            # cv2.waitKey(0)
-
-            # # Scale the second object
-            # obj2.scale_and_center(2, 2)
-
-            # # Draw the second rectangle (green) on the screenshot
-            # cv2.rectangle(screenshot, (obj2._x_min, obj2._y_min), (obj2._x_max, obj2._y_max), (0, 255, 0), 2)
-
-            # # Display the screenshot with the scaled object
-            # cv2.imshow("Scaled Object", screenshot)
-            # cv2.waitKey(0)
-            # cv2.destroyAllWindows()
-
-            # Assuming that you have already created an OutlinedObject object called obj:
-            # bank = self.get_nearest_tag(clr.YELLOW)
-            # self.mouse.move_to(bank.center())
-            # self.mouse.click()
-            # time.sleep(1)
-            self.walk_vertical(color=clr.YELLOW, direction=-1)
-            self.walk_vertical(color=clr.PINK, direction=1)
-
-            # x = .1
-
-            # while True:
-            #     obj = self.win.chat.scale(scale_height=0.37, scale_width=1, anchor_y=1, anchor_x=0)
-            #     image = obj.screenshot()
-            #     # Display the image using OpenCV
-            #     cv2.imshow('Screenshot', image)
-            #     cv2.waitKey(0)
-            #     cv2.destroyAllWindows()
-            #     x += .01
-            #     print(x)
+            self.is_idle2()
 
         
 
@@ -176,6 +101,7 @@ class GeometryTesting(WillowsDadBot):
         self.log_msg("Finished.")
         self.logout()
         self.stop()
+
 
 
     def walk_to_color(self, color: clr, direction: int):
