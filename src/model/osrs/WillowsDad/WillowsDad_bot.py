@@ -30,6 +30,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
     def __init__(self, bot_title, description) -> None:
         super().__init__(bot_title, description)
         self.take_birdhouse_breaks = False
+        self.birdhouse = None
 
 
     def create_options(self):
@@ -948,7 +949,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             Returns:"""
         # setup
         birdhouse_seeds = [self.WILLOWSDAD_IMAGES.joinpath("Hammerstone_seeds.png")]
-        birdhouse_items = [self.WILLOWSDAD_IMAGES.joinpath("Yew_birdhouse.png")]
+        birdhouse_items = [self.birdhouse]
         digsite_pendant = self.WILLOWSDAD_IMAGES.joinpath("Digsite_pendant.png")
         self.need_to_equip = False       
 

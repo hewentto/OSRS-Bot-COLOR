@@ -26,6 +26,7 @@ class OSRSWDBirdhouseRun(WillowsDadBot):
         self.delay_max = .67
         self.loops = 10
         self.wait_time = 0
+        self.birdhouse = self.WILLOWSDAD_IMAGES.joinpath("Yew_bird_house_bank.png")
 
 
     def create_options(self):
@@ -39,6 +40,7 @@ class OSRSWDBirdhouseRun(WillowsDadBot):
         self.options_builder.add_slider_option("delay_min", "How long to take between actions (min) (MiliSeconds)?", 300,1200)
         self.options_builder.add_slider_option("delay_max", "How long to take between actions (max) (MiliSeconds)?", 350,1200)
         self.options_builder.add_slider_option("wait_time", "Wait time before first run (minutes)?", 0, 50)
+        self.options_builder.add_dropdown_option("bird_house_type", "What type of bird house?", ["Oak", "Willow", "Maple", "Teak", "Mahogany", "Yew", "Magic", "Redwood"])
 
     def save_options(self, options: dict):  # sourcery skip: for-index-underscore
         """
@@ -55,6 +57,8 @@ class OSRSWDBirdhouseRun(WillowsDadBot):
                 self.delay_max = options[option]/1000
             elif option == "wait_time":
                 self.wait_time = options[option]*60
+            elif option == "bird_house_type":
+                self.birdhouse = self.WILLOWSDAD_IMAGES.joinpath(f"{options[option]}_bird_house_bank.png")
 
         self.log_msg(f"Bot will wait between {self.delay_min} and {self.delay_max} seconds between actions.")
         self.log_msg("Options set successfully.")
