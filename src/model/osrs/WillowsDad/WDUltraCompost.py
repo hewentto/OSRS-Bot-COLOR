@@ -171,14 +171,14 @@ class OSRSWDUltraCompostMaker(WillowsDadBot):
             None
         """
         # get unique items in inventory
-        unique_items = self.api_m.get_first_occurrence(self.withdraw_ids)
+        unique_items = [0,1]
 
         # move mouse to each item and click
         for item in unique_items:
             self.mouse.move_to(self.win.inventory_slots[item].scale(.68, .68).random_point())
-            time.sleep(self.random_sleep_length(.21, .39))
+            time.sleep(self.random_sleep_length(.8, .22))
             self.mouse.click()
-            time.sleep(self.random_sleep_length(.21, .39))
+            time.sleep(self.random_sleep_length(.8, .21))
 
         self.wait_until_img(self.text_box_ultracompost, self.win.chat, timeout=3)
         time.sleep(self.random_sleep_length())

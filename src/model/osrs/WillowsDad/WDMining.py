@@ -28,6 +28,7 @@ class OSRSWDMining(WillowsDadBot):
         self.Mining_tools = ids.pickaxes
         self.dragon_special = True
         self.location = "Mining Guild"
+        self.tri_rock = True
 
 
     def create_options(self):
@@ -41,6 +42,7 @@ class OSRSWDMining(WillowsDadBot):
         self.options_builder.add_checkbox_option("power_Mining", "Power Mining? Drops everything in inventory.", [" "])
         self.options_builder.add_checkbox_option("dragon_special", "Use Dragon Pickaxe Special?", [" "])
         self.options_builder.add_checkbox_option("location", "Location?", ["Varrock East","Mining Guild"])
+        self.options_builder.add_checkbox_option("tri_rock", "Tri Rock?", [" "])
 
 
     def save_options(self, options: dict):
@@ -57,6 +59,8 @@ class OSRSWDMining(WillowsDadBot):
                 self.dragon_special = options[option] != []
             elif option == "location":
                 self.location = options[option]
+            elif option == "tri_rock":
+                self.tri_rock = options[option] != []
             else:
                 self.log_msg(f"Unexpected option: {option}")
 
@@ -105,7 +109,10 @@ class OSRSWDMining(WillowsDadBot):
                 while self.is_last_inv_slot_empty():
                     self.check_run()
                     if Mining_spot := self.get_mining_spot():
-                        self.go_mining()
+                        if self.tri_rock:
+                            self.go_tri_mining()
+                        else:
+                            self.go_mining()
                         deposit_slots = self.api_m.get_first_occurrence(self.deposit_ids)
                     else:
                         self.walk_to_mine()
@@ -488,3 +495,102 @@ class OSRSWDMining(WillowsDadBot):
             time.sleep(self.random_sleep_length(.67, 1.24))
 
         return
+    
+
+    def go_tri_mining(self):
+        self.breaks_skipped = 0
+        afk_time = 0
+        afk_start_time = time.time()
+
+        self.mouse.move_to(self.get_nearest_tag(clr.CYAN).random_point())
+        self.mouse.click()
+        self.wait_until_idle()
+        
+        index = 0
+        last_mined_index = 0
+        first_click = True
+
+        mining_spots = self.get_all_tagged_in_rect(self.win.game_view, clr.PINK)
+        while mining_spots is None:
+            mining_spots = self.get_all_tagged_in_rect(self.win.game_view, clr.PINK)
+            time.sleep(0.1)
+
+        # click on the first mining spot
+        self.mouse.move_to(mining_spots[0].random_point())
+        self.mouse.click()
+        self.wait_until_idle()
+
+        mining_spots = self.get_all_tagged_in_rect(self.win.game_view, clr.PINK)
+        while len(mining_spots) != 3:
+            mining_spots = self.get_all_tagged_in_rect(self.win.game_view, clr.PINK)
+            time.sleep(0.1)
+
+
+        while not self.is_inv_full():
+            if len(mining_spots) != 3:
+                mining_spots = self.get_all_tagged_in_rect(self.win.game_view, clr.PINK)
+            
+            if first_click:
+                self.mouse.move_to(mining_spots[index].random_point())
+                if self.mouseover_text("Iron", color=clr.OFF_CYAN):
+                    self.mouse.click()
+                    self.wait_until_idle()
+                    first_click = False
+                    continue
+                while not self.mouse.click(check_red_click=True):
+                    # something goes here
+                    continue
+                    
+            
+            if self.get_special_energy() >= 100 and self.dragon_special:
+                self.activate_special()
+                self.log_msg("Dragon Pickaxe Special Activated")
+
+            self.idle_time = time.time()
+            afk_time = int(time.time() - afk_start_time)
+
+            for i in range(last_mined_index + 1, len(colors)):
+                color = colors[i]
+                if color in exhausted_colors:
+                    continue
+                    
+                mining_spot = self.get_nearest_tag(color)
+                if mining_spot:
+                    self.mouse.move_to(mining_spot.random_point(), mouseSpeed="fast")
+                    next_mining_spot = None
+                    while not self.mouse.click(check_red_click=True):
+                        if next_mining_spot is None:
+                            next_color_index = (i + 1) % len(colors)
+                            next_color = colors[next_color_index]
+                            next_mining_spot = self.get_nearest_tag(next_color)
+                            if next_mining_spot:
+                                self.mouse.move_to(next_mining_spot.random_point(), mouseSpeed="fast")
+                        mining_spot = self.get_nearest_tag(color)
+                        if mining_spot:
+                            self.mouse.move_to(mining_spot.random_point(), mouseSpeed="fast")
+                    
+                    while self.get_nearest_tag(color):  # Continuously check if the color is still present
+                        if next_mining_spot is None:
+                            next_color_index = (i + 1) % len(colors)
+                            next_color = colors[next_color_index]
+                            next_mining_spot = self.get_nearest_tag(next_color)
+                            if next_mining_spot:
+                                self.mouse.move_to(next_mining_spot.random_point(), mouseSpeed="fast")
+                        time.sleep(self.random_sleep_length(0.01, 0.03))  # Adjust sleep time as needed
+                    
+                    last_mined_index = i
+                    exhausted_colors.clear()  # Reset exhausted colors
+                    break
+                else:
+                    exhausted_colors.add(color)
+
+            if last_mined_index == -1 or last_mined_index == len(colors) - 1:
+                exhausted_colors.clear()  # Reset exhausted colors
+                last_mined_index = -1
+        
+        self.breaks_skipped = afk_time // 15
+
+        if self.breaks_skipped > 0:
+            self.roll_chance_passed = True
+            self.multiplier += self.breaks_skipped * 0.25
+            self.log_msg(f"Skipped {self.breaks_skipped} break rolls while mining.")

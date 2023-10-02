@@ -1415,9 +1415,6 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             previous_screenshot = current_screenshot
             time.sleep(0.3)
 
-        self.log_msg("Idle", overwrite=True)
-
-
 
     def is_animating(self, previous_screenshot, current_screenshot):
           """Created by @Gang on the OSBC discord server"""
