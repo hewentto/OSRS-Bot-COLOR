@@ -41,6 +41,7 @@ class OSRSWDFishing(WillowsDadBot):
         self.options_builder.add_dropdown_option("style", "What type of fishing?", ["Fly", "Bait", "Harpoon", "Net", "Cage"])
         self.options_builder.add_checkbox_option("power_fishing", "Power Fishing? Drops everything in inventory.", [" "])
         self.options_builder.add_checkbox_option("dragon_special", "Use Dragon Harpoon Special?", [" "])
+        self.options_builder.add_checkbox_option("login_after", "Login after bot stops?", [" "])
 
     def save_options(self, options: dict):
         """
@@ -72,6 +73,8 @@ class OSRSWDFishing(WillowsDadBot):
                 self.dragon_special = options[option] != []
             elif option == "power_fishing":
                 self.power_fishing = options[option] != []
+            elif option == "login_after":
+                self.login_after = options[option] != []
             else:
                 self.log_msg(f"Unexpected option: {option}")
 
@@ -144,6 +147,14 @@ class OSRSWDFishing(WillowsDadBot):
                 self.update_progress((time.time() - self.start_time) / self.end_time)
                 self.last_progress = round(self.progress, 2)
 
+            # relogin every 4-5 hours
+            if self.login_after and runtime > (60* int(rd.fancy_normal_sample(180, 240))):
+                self.start_time = time.time()
+                self.end_time = self.start_time + (self.running_time * 60)
+                self.logout()
+                self.random_sleep_length(10,80)
+                self.sign_in()
+
         self.update_progress(1)
         self.log_msg("Finished.")
         self.logout()
@@ -198,6 +209,10 @@ class OSRSWDFishing(WillowsDadBot):
         super().setup()
         self.idle_time = 0
         self.deposit_ids = [ids.RAW_ANCHOVIES, ids.RAW_SHRIMPS, ids.RAW_LOBSTER, ids.RAW_TUNA, ids.RAW_SWORDFISH, ids.RAW_SHARK, ids.CLUE_BOTTLE_BEGINNER, ids.CLUE_BOTTLE_EASY, ids.CLUE_BOTTLE_MEDIUM, ids.CLUE_BOTTLE_HARD, ids.CLUE_BOTTLE_ELITE]
+
+        if self.login_after:
+            self.get_UandP()
+
 
         if not self.power_fishing:
             self.face_north()
@@ -291,7 +306,7 @@ class OSRSWDFishing(WillowsDadBot):
 
     def check_equipment(self):
         """
-        Stops script if no axe is equipped.
+        Stops script correct tools aren't is equipped.
         Returns: none
         Args: None
         """
