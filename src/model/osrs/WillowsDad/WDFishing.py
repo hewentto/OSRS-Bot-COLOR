@@ -19,14 +19,15 @@ class OSRSWDFishing(WillowsDadBot):
         # Set option variables below (initial value is only used during UI-less testing)
         self.running_time = 200
         self.take_breaks = True
-        self.afk_train = True
+        self.afk_train = False
         self.delay_min =0.37
         self.delay_max = .67
-        self.style = "Cage"
+        self.style = "Minnows"
         self.power_fishing = False
-        self.fishing_tools = [ids.LOBSTER_POT]
+        self.fishing_tools = [ids.SMALL_FISHING_NET]
         self.fishing_bait = []
-        self.dragon_special = False
+        self.dragon_special = True
+        self.login_after = False
 
 
 
@@ -38,7 +39,7 @@ class OSRSWDFishing(WillowsDadBot):
         unpack the dictionary of options after the user has selected them.
         """
         super().create_options()
-        self.options_builder.add_dropdown_option("style", "What type of fishing?", ["Fly", "Bait", "Harpoon", "Net", "Cage"])
+        self.options_builder.add_dropdown_option("style", "What type of fishing?", ["Fly", "Bait", "Harpoon", "Net", "Cage", "Minnows"])
         self.options_builder.add_checkbox_option("power_fishing", "Power Fishing? Drops everything in inventory.", [" "])
         self.options_builder.add_checkbox_option("dragon_special", "Use Dragon Harpoon Special?", [" "])
         self.options_builder.add_checkbox_option("login_after", "Login after bot stops?", [" "])
@@ -63,8 +64,8 @@ class OSRSWDFishing(WillowsDadBot):
                 elif options[option] == "Harpoon":
                     self.style = "Harpoon"
                     self.fishing_tools = [ids.HARPOON, ids.DRAGON_HARPOON, ids.BARBTAIL_HARPOON]
-                elif options[option] == "Net":
-                    self.style = "Net"
+                elif options[option] == "Net" or options[option] == "Minnows":
+                    self.style = options[option]
                     self.fishing_tools = [ids.SMALL_FISHING_NET]
                 elif options[option] == "Cage":
                     self.style = "Cage"
@@ -117,11 +118,14 @@ class OSRSWDFishing(WillowsDadBot):
                         self.bank_or_drop(deposit_slots)
 
                 # Check if idle
-                if self.api_m.get_is_player_idle():
+                if self.api_m.get_is_player_idle() and not self.style == "Minnows":
                     self.log_msg("Fishing...")
                     self.go_fish()
+                else:
+                    self.go_minnow_fishing()
+                
 
-                if self.is_fishing():
+                if self.is_fishing() and not self.style == "Minnows":
                     if self.afk_train and self.is_runelite_focused():
                         self.switch_window()
                     self.sleep(percentage)
@@ -160,6 +164,57 @@ class OSRSWDFishing(WillowsDadBot):
         self.logout()
         self.stop()
 
+    def go_minnow_fishing(self):
+        """
+        This fish for minows.
+        Keeps of track of the last location, and checks if the minnow spot moves.
+        Returns: boolean
+        Args: None
+        """
+        self.idle_time = time.time()
+        afk_time = 0
+        afk_start_time = time.time() 
+
+        if fishing_spot := self.get_nearest_tag(clr.PINK):
+                self.mouse.move_to(fishing_spot.random_point())
+                while not self.mouse.click(check_red_click=True):
+                    # If the click was unsuccessful, get the mining spot again and move the mouse to it
+                    fishing_spot = self.get_nearest_tag(clr.PINK)
+                    if fishing_spot:
+                        self.mouse.move_to(fishing_spot.random_point())
+                last_distance = fishing_spot.distance_from_rect_center()
+        else: 
+            return
+        
+        while True:
+            # This loop will continuously check the distance until the character has stopped moving
+            fishing_spot = self.get_nearest_tag(clr.PINK)
+            if not fishing_spot:
+                return
+            current_distance = fishing_spot.distance_from_rect_center()
+            if (abs(current_distance - last_distance) == 0):
+                break
+            last_distance = current_distance
+            time.sleep(self.random_sleep_length() / 2)
+
+        while True:  # Start an indefinite loop
+                    afk_time = int(time.time() - afk_start_time)
+                    fishing_spot = self.get_nearest_tag(clr.PINK)
+                    current_distance = fishing_spot.distance_from_rect_center()
+
+                    if current_distance > last_distance:
+                        self.log_msg("Minnow spot moved, walking to new spot.")
+                        break  # This will exit the loop if all conditions are met
+
+                    last_distance = current_distance
+                    time.sleep(self.random_sleep_length() / 2)  # Or whatever sleep time is appropriate
+
+        self.breaks_skipped = afk_time // 6 # increasing break chance
+
+        if self.breaks_skipped > 0:
+            self.roll_chance_passed = True
+            self.multiplier += self.breaks_skipped * .25
+            self.log_msg(f"Skipped {self.breaks_skipped} break rolls while fishing.")
 
     def walk_to_color(self, color: clr, direction: int):
         """
@@ -216,6 +271,9 @@ class OSRSWDFishing(WillowsDadBot):
 
         if not self.power_fishing:
             self.face_north()
+        
+        if self.style == "Minnows":
+            self.last_location = self.get_nearest_tag(clr.PINK)
         
         # Setup Checks for axes and tagged objects
         self.check_equipment()

@@ -145,7 +145,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         afk__start_time = time.time() 
 
         while not self.api_m.get_is_player_idle():
-            time.sleep(self.random_sleep_length(.65, 2.2))
+            time.sleep(self.random_sleep_length(.35, .85))
             afk_time = int(time.time() - afk__start_time)
             self.is_runelite_focused()
             self.breaks_skipped = afk_time // 15
@@ -336,7 +336,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         Returns: void
         Args: minutes_since_last_break (int) - the number of minutes passed since the last break."""
         # break type is a random choice from list
-        break_type = random.choice(["menu", "break"])
+        break_type = random.choice(["menu", "menu","menu" "break"])
 
         if break_type == "menu":
             self.take_menu_break()
@@ -344,15 +344,10 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         if break_type == "break":
             self.log_msg("Taking a break...")
 
-            # check if player is idle
-            while not self.api_m.get_is_player_idle():
-                self.log_msg("Player is not idle, waiting for player to be idle before taking break...")
-                time.sleep(self.random_sleep_length(3,8))
-
             if minutes_since_last_break > 25:
                 self.take_break(15, 120)
             else:
-                self.take_break()
+                self.take_break(3,8)
 
 
     def switch_account(self):
