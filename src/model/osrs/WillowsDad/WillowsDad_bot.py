@@ -417,7 +417,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         """Will sign in to the game form the "existing user or new user" screen. It is up to you to 
         wait for the login to complete."""
 
-        existing_user = self.wait_until_img(self.WILLOWSDAD_IMAGES.joinpath("existing_user.png"), self.win.rectangle())
+        existing_user = self.wait_until_img(self.WILLOWSDAD_IMAGES.joinpath("existing_user2.png"), self.win.rectangle())
 
         self.mouse.move_to(existing_user.random_point())
         self.mouse.click()
@@ -1358,9 +1358,9 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         time_start = time.time()
         while True:
             time.sleep(self.random_sleep_length())
-            if found :=imsearch.search_img_in_rect(img, screen):
+            if found := imsearch.search_img_in_rect(img, screen):
                 break
-            if time.time() - time_start > timeout:
+            if time.time() - time_start > timeout:  # Check if we've been waiting longer than the specified timeout
                 self.log_msg(f"We've been waiting for {timeout} seconds, something is wrong...stopping.")
                 self.stop()
         return found
