@@ -1430,3 +1430,14 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
           percentage_diff = (total_area / previous_screenshot.size) * 100
 
           return percentage_diff
+
+    def wait_for_xp_drop(self, last_xp: int, timeout: int = 5):
+        """This will wait for the xp drop to appear"""
+        time_start = time.time()
+        current_xp = self.get_total_xp()
+        while current_xp == last_xp:
+            if time.time() - time_start > timeout:
+                self.log_msg(f"We've been waiting for {timeout} seconds for xp drop, something is wrong...stopping.")
+                self.stop()
+            current_xp = self.get_total_xp()
+            time.sleep(self.random_sleep_length() / 2)

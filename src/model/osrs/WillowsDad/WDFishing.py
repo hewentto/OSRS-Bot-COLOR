@@ -190,16 +190,7 @@ class OSRSWDFishing(WillowsDadBot):
         else: 
             return
         
-        while True:
-            # This loop will continuously check the distance until the character has stopped moving
-            fishing_spot = self.get_nearest_tag(clr.PINK)
-            if not fishing_spot:
-                return
-            current_distance = fishing_spot.distance_from_rect_center()
-            if (abs(current_distance - last_distance) == 0):
-                break
-            last_distance = current_distance
-            time.sleep(self.random_sleep_length() / 2)
+        self.wait_for_xp_drop(self.get_total_xp())
 
         while True:  # Start an indefinite loop
                     afk_time = int(time.time() - afk_start_time)
