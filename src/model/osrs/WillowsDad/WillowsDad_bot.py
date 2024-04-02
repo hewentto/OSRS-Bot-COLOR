@@ -1441,3 +1441,18 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
                 return
             current_xp = self.get_total_xp()
             time.sleep(self.random_sleep_length() / 2)
+
+    def wait_till_npc_dead(self, timeout: int = 30):
+        """This will wait till npc is dead"""
+        time_start = time.time()
+        while True:
+            text = ocr.extract_text(self.win.game_view.scale(.3,.3,0,0), font=ocr.PLAIN_12 , color=clr.WHITE, exclude_chars="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'\"`")
+            # while text does not contain "0/" or anything before the 0 (like 20/)
+            if text.startswith("0/"):
+                return
+            if time.time() - time_start > timeout:
+                self.log_msg(f"We've been waiting for {timeout} seconds for npc to die.")
+                return
+            if not self.api_m.get_is_in_combat():
+                return
+            time.sleep(self.random_sleep_length())

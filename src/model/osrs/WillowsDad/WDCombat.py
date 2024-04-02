@@ -23,10 +23,12 @@ class OSRSWDCombat(WillowsDadBot, launcher.Launchable):
             " button on the right."
         )
         super().__init__(bot_title=bot_title, description=description)
-        self.running_time: int = 10
-        self.delay_min: int = 350
-        self.delay_max: int = 500
+        self.running_time: int = 360
+        self.delay_min: int = .2
+        self.delay_max: int = .42
         self.loot_items: str = ""
+        self.afk_train: bool = False
+        self.take_breaks: bool = True
         self.hp_threshold: int = 12
         self.bury_bones = False
 
@@ -67,42 +69,39 @@ class OSRSWDCombat(WillowsDadBot, launcher.Launchable):
 
             try:
                 # If inventory is full...
-                if self.api_s.get_is_inv_full() and self.bury_bones:
+                if self.bury_bones and self.api_s.get_is_inv_full():
                     self.log_msg("Inventory full. Burying bones...")
                     self.bury_bones_in_inventory(bury_slots)
-                # While not in combat
-                while self.api_m.get_is_player_idle():
-                    # Find a target
-                    target = self.get_nearest_tagged_NPC()
-                    if target is None:
-                        failed_searches += 1
-                        if failed_searches % 10 == 0:
-                            self.log_msg("Searching for targets...")
-                        if failed_searches > 60:
-                            # If we've been searching for a whole minute...
-                            self.__logout("No tagged targets found. Logging out.")
-                            return
-                        time.sleep(1)
-                        continue
-                    failed_searches = 0
+                # Find a target
+                target = self.get_nearest_tagged_NPC()
+                while target is None:
+                    failed_searches += 1
+                    if failed_searches % 10 == 0:
+                        self.log_msg("Searching for targets...")
+                    if failed_searches > 60:
+                        # If we've been searching for a whole minute...
+                        self.__logout("No tagged targets found. Logging out.")
+                        return
+                    time.sleep(1)
+                    continue
+                failed_searches = 0
 
-                    # Click target if mouse is actually hovering over it, else recalculate
-                    self.mouse.move_to(target.random_point())
-                    while not self.mouse.click(check_red_click=True):
-                        target = self.get_nearest_tagged_NPC()
-                        self.mouse.move_to(target.random_point(), mouseSpeed="fastest")
-                        if "reach" in self.api_m.get_latest_chat_message().lower():
-                            self.log_msg("Target is out of reach.")
-                            targets = self.get_all_tagged_in_rect(self.win.game_view, clr.PINK)
-                            self.mouse.move_to(targets[int(rand.fancy_normal_sample(0,len(targets)-1))].random_point(), mouseSpeed="fastest")
-                    time.sleep(3)
-                
-                # While in combat
-                while self.has_hp_bar():
-                    # Check to eat food
-                    if self.get_hp() < self.hp_threshold:
-                        self.__eat(self.api_s)
-                    time.sleep(.5)
+                # Click target if mouse is actually hovering over it, else recalculate
+                self.mouse.move_to(target.random_point(), mouseSpeed="fastest")
+                while not self.mouse.click(check_red_click=True):
+                    target = self.get_nearest_tagged_NPC()
+                    self.mouse.move_to(target.random_point(), mouseSpeed="fastest")
+                    if "reach" in self.api_m.get_latest_chat_message().lower():
+                        self.log_msg("Target is out of reach.")
+                        targets = self.get_all_tagged_in_rect(self.win.game_view, clr.PINK)
+                        self.mouse.move_to(targets[int(rand.fancy_normal_sample(0,len(targets)-1))].random_point(), mouseSpeed="fastest")
+
+                self.wait_for_xp_drop(self.get_total_xp(), 5)
+                time.sleep(self.random_sleep_length(1.2,1.89))
+                self.wait_till_npc_dead()
+                # Check to eat food
+                if self.get_hp() < self.hp_threshold:
+                    self.__eat(self.api_s)
 
                 # Loot all highlighted items on the ground
                 if self.loot_items:

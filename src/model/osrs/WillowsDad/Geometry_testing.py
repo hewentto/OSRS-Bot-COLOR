@@ -11,9 +11,8 @@ import utilities.random_util as rd
 import utilities.imagesearch as imsearch
 import pyautogui as pag
 from utilities.geometry import RuneLiteObject
-import pyautogui
 import utilities.api.T1G_API as tig
-
+import utilities.ocr as ocr
 
 
 class GeometryTesting(WillowsDadBot):
@@ -92,8 +91,7 @@ class GeometryTesting(WillowsDadBot):
         self.start_time = time.time()
         self.end_time = self.start_time + self.running_time * 60
         while time.time() - self.start_time < self.end_time:
-
-            self.is_idle2()
+            self.log_msg("Starting loop.")
 
         
 
