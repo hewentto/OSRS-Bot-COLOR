@@ -241,7 +241,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         This will check if deposit all png is found, and select all if not.
         """
         # if we've already searched and found, return
-        if not self.deposit_all_red_button:
+        if self.deposit_all_red_button:
             return
         # get the path of deposit_all_grey.png and red
         deposit_all_grey = self.WILLOWSDAD_IMAGES.joinpath("deposit_all_grey.png")
@@ -1390,8 +1390,8 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
 
 
     def wait_until_idle(self):
-        idle_threshold = 0.3  # Adjust the threshold as needed
-        consecutive_idle_frames = 2  # Number of consecutive frames with a small difference to consider as idle
+        idle_threshold = 0.6  # Adjust the threshold as needed
+        consecutive_idle_frames = 3  # Number of consecutive frames with a small difference to consider as idle
 
         previous_screenshot = None
         consecutive_idle_count = 0
@@ -1405,7 +1405,6 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
                     consecutive_idle_count += 1
                 else:
                     consecutive_idle_count = 0
-                    self.log_msg("Not Idle", overwrite=True)
 
             previous_screenshot = current_screenshot
             time.sleep(0.3)
@@ -1438,11 +1437,12 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         while current_xp == last_xp:
             if time.time() - time_start > timeout:
                 self.log_msg(f"We've been waiting for {timeout} seconds for xp drop.")
-                return
+                return False
             current_xp = self.get_total_xp()
             time.sleep(self.random_sleep_length() / 2)
+        return True
 
-    def wait_till_npc_dead(self, timeout: int = 30):
+    def wait_till_npc_dead(self, timeout: int = 70):
         """This will wait till npc is dead"""
         time_start = time.time()
         while True:

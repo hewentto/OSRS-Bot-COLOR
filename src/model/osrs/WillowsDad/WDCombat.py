@@ -96,9 +96,9 @@ class OSRSWDCombat(WillowsDadBot, launcher.Launchable):
                         targets = self.get_all_tagged_in_rect(self.win.game_view, clr.PINK)
                         self.mouse.move_to(targets[int(rand.fancy_normal_sample(0,len(targets)-1))].random_point(), mouseSpeed="fastest")
 
-                self.wait_for_xp_drop(self.get_total_xp(), 5)
-                time.sleep(self.random_sleep_length(1.2,1.89))
-                self.wait_till_npc_dead()
+                if self.wait_for_xp_drop(self.get_total_xp(), 5):
+                    time.sleep(self.random_sleep_length(1.2,1.89))
+                    self.wait_till_npc_dead()
                 # Check to eat food
                 if self.get_hp() < self.hp_threshold:
                     self.__eat(self.api_s)
