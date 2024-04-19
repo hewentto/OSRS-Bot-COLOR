@@ -11,6 +11,7 @@ from tktooltip import ToolTip
 from model.osrs.WillowsDad.Geometry_testing import GeometryTesting
 from model.osrs.WillowsDad.WDAnimatedArmour import OSRSWDAnimatedArmour
 from model.osrs.WillowsDad.WDCombat import OSRSWDCombat
+from model.osrs.WillowsDad.WDMotherload import OSRSWDMotherload
 import utilities.settings as settings
 from controller.bot_controller import BotController, MockBotController
 from model import Bot, RuneLiteBot, WillowsDadBot
@@ -345,9 +346,9 @@ class App(customtkinter.CTk):
 if __name__ == "__main__":
     # To test a bot without the GUI, address the comments for each line below.
     # from model.<folder_bot_is_in> import <bot_class_name>  # Uncomment this line and replace <folder_bot_is_in> and <bot_class_name> accordingly to import your bot
-    app = App()  # Add the "test=True" argument to the App constructor call.
-    app.start()  # Comment out this line.
-    # app.test(OSRSWDAnimatedArmour())  # Uncomment this line and replace argument with your bot's instance.
+    app = App(test=True)  # Add the "test=True" argument to the App constructor call.
+    # app.start()  # Comment out this line.
+    app.test(OSRSWDMotherload())  # Uncomment this line and replace argument with your bot's instance.
 
     # IMPORTANT
     # - Make sure your bot's options are pre-defined in its __init__ method.

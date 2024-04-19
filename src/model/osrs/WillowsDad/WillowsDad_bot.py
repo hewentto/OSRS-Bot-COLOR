@@ -480,7 +480,8 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         """
         slot_location = self.win.inventory_slots[-1].scale(.5,.5)
         slot_img = imsearch.BOT_IMAGES.joinpath(self.WILLOWSDAD_IMAGES, "emptyslot.png")
-        return bool(slot := imsearch.search_img_in_rect(slot_img, slot_location))
+        slot = bool(imsearch.search_img_in_rect(slot_img, slot_location))
+        return slot
 
 
     def open_bank(self):
@@ -791,7 +792,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         # Loop until the time limit is reached
         while (time.time() < end_time):
             # Check if the image is found in the game view
-            if deposit_btn := imsearch.search_img_in_rect(deposit_all_img, self.win.game_view.scale(scale_height=.2, anchor_y=.8)):
+            if deposit_btn := imsearch.search_img_in_rect(deposit_all_img, self.win.game_view.scale(scale_height=.5, anchor_y=.8)):
                 return True
 
             # Sleep for a short time to avoid excessive CPU usage
@@ -1456,3 +1457,21 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             if not self.api_m.get_is_in_combat():
                 return
             time.sleep(self.random_sleep_length())
+
+    def click_deposit_all(self):
+        """This will click the deposit all button in bank"""
+        deposit_all = imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("bank_all.png"), self.win.game_view.scale(scale_height=.5, anchor_y=.8))
+        if deposit_all is None:
+            self.log_msg("Could not find deposit all button, quitting bot...")
+            self.stop()
+        self.mouse.move_to(deposit_all.random_point())
+        self.mouse.click()
+        return
+    
+    def is_inv_slot_empty(self, slot: int):
+        """
+        Checks if the inventory slot is empty."""
+        slot_location = self.win.inventory_slots[slot].scale(.5,.5)
+        slot_img = imsearch.BOT_IMAGES.joinpath(self.WILLOWSDAD_IMAGES, "emptyslot.png")
+        slot = bool(imsearch.search_img_in_rect(slot_img, slot_location))
+        return slot
