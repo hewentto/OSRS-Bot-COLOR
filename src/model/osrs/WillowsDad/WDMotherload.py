@@ -92,8 +92,9 @@ class OSRSWDMotherload(WillowsDadBot):
             self.roll_chance_passed = False
 
             try:
-                while self.is_last_inv_slot_empty() and self.check_deposits() > 0:
+                while not self.is_inv_full() and self.check_deposits() > 0:
                     self.check_run()
+                    self.walk_to_mine()
                     if Mining_spot := self.get_mining_spot():
                         self.go_mining()
 
@@ -221,7 +222,7 @@ class OSRSWDMotherload(WillowsDadBot):
         else: 
             return
         
-        if self.wait_for_xp_drop(self.get_total_xp(), 7) == False:
+        if self.wait_for_xp_drop(self.get_total_xp(), 15) == False:
             return
 
         while True:  # Start an indefinite loop
@@ -232,8 +233,17 @@ class OSRSWDMotherload(WillowsDadBot):
                     if self.dragon_special:
                         self.check_special()
 
-                    if current_distance > last_distance or not self.is_last_inv_slot_empty() or current_distance > 30:
-                        break  # This will exit the loop if all conditions are met
+                    if current_distance > 34:
+                        self.log_msg(f"Distance is greater than 34 ({current_distance})")
+                        break  # This will exit the loop if the current distance is greater than 30
+
+                    if current_distance > last_distance:
+                        self.log_msg("Current distance is greater than last distance, moving to next spot.")
+                        break  # This will exit the loop if the current distance is greater than the last distance
+
+                    if self.is_inv_full():
+                        self.log_msg("Inventory is full, moving to bank.")
+                        break  # This will exit the loop if the last inventory slot is not empty
 
                     last_distance = current_distance
                     time.sleep(self.random_sleep_length() / 2)  # Or whatever sleep time is appropriate
@@ -466,9 +476,15 @@ class OSRSWDMotherload(WillowsDadBot):
             return deposits_left
         elif deposits := ocr.extract_text(self.win.game_view.scale(scale_height=0.37, scale_width=.3, anchor_y=0, anchor_x=0), ocr.PLAIN_12, clr.WHITE):
             # return any only numbers found after the word left
-            deposits_left = int(deposits.split("left:")[1].strip("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\'\"!@#$%^&*()_+=-`~:;<>?,./\\|[]{}").strip())
+            deposits_left = None
+            if "left" in deposits:
+                deposits_left = int(deposits.split("left:")[1].strip("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\'\"!@#$%^&*()_+=-`~:;<>?,./\\|[]{}").strip())
+            else:
+                pay_dirt = int(deposits.split("sack:")[1].strip("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\'\"!@#$%^&*()_+=-`~:;<>?,./\\|[]{}").strip())
+                if pay_dirt >= 79:
+                    deposits_left = 1
             return deposits_left
-        return None
+        return 1 # if no deposits are found, return 1, default to emptying sack
     
     def check_wheel(self):
         """
@@ -487,13 +503,13 @@ class OSRSWDMotherload(WillowsDadBot):
         """
         loads dirt into the hopper
         """
-        while not self.is_last_inv_slot_empty():
+        while self.api_m.get_if_item_in_inv(self.ores):
             self.mouse.move_to(self.get_nearest_tag(clr.GREEN).random_point())
             while not self.mouse.click(check_red_click=True):
                 dirt = self.get_nearest_tag(clr.GREEN)
                 if dirt:
                     self.mouse.move_to(dirt.random_point())
-            while not self.is_last_inv_slot_empty():
+            while self.api_m.get_if_item_in_inv(self.ores):
                 time.sleep(self.random_sleep_length())
         return
     
@@ -508,7 +524,7 @@ class OSRSWDMotherload(WillowsDadBot):
                     sack = self.get_nearest_tag(clr.BLUE)
                     if sack:
                         self.mouse.move_to(sack.random_point())
-                while self.is_last_inv_slot_empty():
+                while self.is_inv_slot_empty(1):
                     time.sleep(self.random_sleep_length())
 
             self.bank_or_drop(self.api_m.get_first_occurrence(self.deposit_ids))
@@ -520,7 +536,11 @@ class OSRSWDMotherload(WillowsDadBot):
         """
         if sack := ocr.extract_text(self.win.game_view.scale(scale_height=0.37, scale_width=.3, anchor_y=0, anchor_x=0), ocr.PLAIN_12, clr.WHITE):
             # return any only numbers found after the word left
-            sack_left = int(sack.split("left:")[0].strip("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\'\"!@#$%^&*()_+=-`~:;<>?,./\\|[]{}").strip())
-            return sack_left
+            if "left" in sack:
+                sack_left = int(sack.split("left:")[0].strip("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\'\"!@#$%^&*()_+=-`~:;<>?,./\\|[]{}").strip())
+                return sack_left
+            else:
+                sack_left = int(sack.split("sack:")[1].strip("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\'\"!@#$%^&*()_+=-`~:;<>?,./\\|[]{}").strip())
+                return sack_left
         return None
     
