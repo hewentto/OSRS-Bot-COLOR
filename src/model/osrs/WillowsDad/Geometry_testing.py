@@ -11,7 +11,6 @@ import utilities.random_util as rd
 import utilities.imagesearch as imsearch
 import pyautogui as pag
 from utilities.geometry import RuneLiteObject
-import utilities.api.T1G_API as tig
 import utilities.ocr as ocr
 
 

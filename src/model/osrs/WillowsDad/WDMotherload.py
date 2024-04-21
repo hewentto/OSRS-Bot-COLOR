@@ -209,7 +209,9 @@ class OSRSWDMotherload(WillowsDadBot):
         """
         self.idle_time = time.time()
         afk_time = 0
-        afk_start_time = time.time() 
+        afk_start_time = time.time()
+        if self.dragon_special:
+             self.check_special() 
 
         if ore_vein := self.get_nearest_tag(clr.PINK):
                 self.mouse.move_to(ore_vein.random_point())
@@ -220,6 +222,7 @@ class OSRSWDMotherload(WillowsDadBot):
                         self.mouse.move_to(ore_vein.random_point())
                 last_distance = ore_vein.distance_from_rect_center()
         else: 
+            self.wait_until_color(clr.PINK, 40)
             return
         
         if self.wait_for_xp_drop(self.get_total_xp(), 15) == False:
@@ -229,9 +232,6 @@ class OSRSWDMotherload(WillowsDadBot):
                     afk_time = int(time.time() - afk_start_time)
                     ore_vein = self.get_nearest_tag(clr.PINK)
                     current_distance = ore_vein.distance_from_rect_center()
-
-                    if self.dragon_special:
-                        self.check_special()
 
                     if current_distance > 34:
                         self.log_msg(f"Distance is greater than 34 ({current_distance})")
@@ -472,11 +472,16 @@ class OSRSWDMotherload(WillowsDadBot):
         uses ocr on top left corner of gamview to check deposits left"""
         if deposits := ocr.extract_text(self.win.game_view.scale(scale_height=0.37, scale_width=.3, anchor_y=0, anchor_x=0), ocr.PLAIN_12, clr.RED):
             # return any only numbers found after the word left
-            deposits_left = int(deposits.split("left:")[1].strip("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\'\"!@#$%^&*()_+=-`~:;<>?,./\\|[]{}").strip())
-            return deposits_left
+            if "left" in deposits:
+                deposits_left = int(deposits.split("left:")[1].strip("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\'\"!@#$%^&*()_+=-`~:;<>?,./\\|[]{}").strip())
+                return deposits_left
+            else:
+                deposits = ocr.extract_text(self.win.game_view.scale(scale_height=0.37, scale_width=.3, anchor_y=0, anchor_x=0), ocr.PLAIN_12, clr.WHITE)
+                deposits_left = int(deposits.split("left:")[1].strip("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\'\"!@#$%^&*()_+=-`~:;<>?,./\\|[]{}").strip())
+                return deposits_left
         elif deposits := ocr.extract_text(self.win.game_view.scale(scale_height=0.37, scale_width=.3, anchor_y=0, anchor_x=0), ocr.PLAIN_12, clr.WHITE):
             # return any only numbers found after the word left
-            deposits_left = None
+            deposits_left = 1
             if "left" in deposits:
                 deposits_left = int(deposits.split("left:")[1].strip("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\'\"!@#$%^&*()_+=-`~:;<>?,./\\|[]{}").strip())
             else:
