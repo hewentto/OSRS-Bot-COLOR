@@ -4,7 +4,7 @@ from tkinter import *
 import cv2
 from model.osrs.osrs_bot import OSRSBot
 import utilities.color as clr
-from utilities.geometry import Rectangle, RuneLiteObject, Point
+from utilities.geometry import Rectangle, RuneLiteObject, Point, cursor_position, screen_size
 import utilities.random_util as rd
 from utilities.api.vision_api import VisionAPI
 import utilities.imagesearch as imsearch
@@ -855,10 +855,10 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         time.sleep(self.random_sleep_length(.2, .46))
 
         # Get the current mouse position and create a Point from it
-        mouse_pos = Point(*pag.position())
+        mouse_pos = cursor_position()
 
         # Get monitor dimensions
-        max_x, max_y = pag.size()
+        max_x, max_y = screen_size()
 
         # Define the dimensions of the rectangle as percentages of the screen size
         rect_width = int(max_x * 0.2)  # 20% of the screen width

@@ -7,7 +7,7 @@ import utilities.color as clr
 import utilities.random_util as rd
 import utilities.imagesearch as imsearch
 import pyautogui as pag
-from utilities.geometry import Point, Rectangle, RuneLiteObject
+from utilities.geometry import Point, Rectangle, RuneLiteObject, cursor_position, screen_size
 from utilities import ocr
 
 
@@ -296,10 +296,10 @@ class OSRSWDAnimatedArmour(WillowsDadBot):
         time.sleep(self.random_sleep_length(.2, .46))
 
         # Get the current mouse position and create a Point from it
-        mouse_pos = Point(*pag.position())
+        mouse_pos = cursor_position()
 
         # Get monitor dimensions
-        max_x, max_y = pag.size()
+        max_x, max_y = screen_size()
 
         # Define the dimensions of the rectangle as percentages of the screen size
         rect_width = int(max_x * 0.2)  # 20% of the screen width

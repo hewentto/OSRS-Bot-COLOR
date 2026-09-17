@@ -8,7 +8,7 @@ from pyclick import HumanCurve
 
 import utilities.debug as debug
 import utilities.imagesearch as imsearch
-from utilities.geometry import Point, Rectangle
+from utilities.geometry import Point, Rectangle, cursor_position, screen_size, to_screen
 from utilities.random_util import truncated_normal_sample
 
 
@@ -38,8 +38,7 @@ class Mouse:
         mouseSpeed = kwargs.get("mouseSpeed", "fastest")
         mouseSpeed = self.__get_mouse_speed(mouseSpeed)
 
-        dest_x = destination[0]
-        dest_y = destination[1]
+        dest_x, dest_y = to_screen(destination)
 
         start_x, start_y = pag.position()
         for curve_x, curve_y in HumanCurve(
@@ -73,7 +72,8 @@ class Mouse:
             x += round(truncated_normal_sample(-x_var, x_var))
         if y_var != 0:
             y += round(truncated_normal_sample(-y_var, y_var))
-        self.move_to((pag.position()[0] + x, pag.position()[1] + y), **kwargs)
+        position = cursor_position()
+        self.move_to((position.x + x, position.y + y), **kwargs)
 
     def click(self, button="left", force_delay=False, check_red_click=False) -> tuple:
         """
@@ -86,9 +86,9 @@ class Mouse:
             None, unless check_red_click is True, in which case it returns a boolean indicating
             whether the click was red (i.e., successful action) or not.
         """
-        mouse_pos_before = pag.position()
+        mouse_pos_before = cursor_position()
         pag.mouseDown(button=button)
-        mouse_pos_after = pag.position()
+        mouse_pos_after = cursor_position()
         if force_delay or self.click_delay:
             LOWER_BOUND_CLICK = 0.03  # Milliseconds
             UPPER_BOUND_CLICK = 0.2  # Milliseconds
@@ -111,8 +111,7 @@ class Mouse:
         Returns a rectangle around a Point with some padding.
         """
         # Get monitor dimensions
-        max_x, max_y = pag.size()
-        max_x, max_y = int(str(max_x)), int(str(max_y))
+        max_x, max_y = screen_size()
 
         # Get the rectangle around the mouse cursor with some padding, ensure it is within the screen.
         mouse_x, mouse_y = mouse_pos
@@ -154,7 +153,8 @@ class Mouse:
             destination: x, y tuple of the destination point.
         """
         # Calculate the distance between the start and end points
-        distance = np.sqrt((destination[0] - pag.position()[0]) ** 2 + (destination[1] - pag.position()[1]) ** 2)
+        position = cursor_position()
+        distance = np.sqrt((destination[0] - position.x) ** 2 + (destination[1] - position.y) ** 2)
         res = round(distance / 200)
         return min(res, 3)
 

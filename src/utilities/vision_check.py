@@ -1,7 +1,7 @@
 """
 Diagnoses "Failed to initialize window". Screenshots the live RuneLite client and scores each UI template that
-`Window.initialize()` relies on, so you can see which region wasn't found, how far off it was, and whether Windows
-display scaling is the reason.
+`Window.initialize()` relies on, at each whole-number enlargement RuneLite can draw the client at, so you can see which
+region wasn't found, how far off it was, and whether Windows display scaling is the reason.
 
 Run from the `src` folder while RuneLite is open and logged in:
     python -m utilities.vision_check
@@ -16,8 +16,9 @@ import cv2
 import numpy as np
 import pywinctl
 
+import utilities.geometry as geometry
 import utilities.imagesearch as imsearch
-from utilities.geometry import Rectangle
+from utilities.window import SUPPORTED_DISPLAY_SCALES, Window
 
 # `imsearch.search_img_in_rect()` counts a template as found when its score is below this.
 FOUND_BELOW = 0.15
@@ -70,29 +71,43 @@ def main() -> None:
     # The bot focuses the client before looking at it, so do the same (a screenshot captures whatever is on top).
     client.activate()
     time.sleep(1)
-    scale, is_stretched = display_scaling(client.getHandle())
-    is_stretched = is_stretched and scale != 1
-    print(f"Window '{client.title}': position ({client.left}, {client.top}), size {client.width}x{client.height}")
-    print(f"Monitor display scaling: {scale:.0%}. Windows is {'STRETCHING' if is_stretched else 'not stretching'} the client.")
-    client_img = Rectangle(client.left, client.top, client.width, client.height).screenshot()
-    cv2.imwrite(str(SCREENSHOT), client_img)
-    print(f"Screenshot saved to {SCREENSHOT}\n")
+    windows_scale, is_stretched = display_scaling(client.getHandle())
+    is_stretched = is_stretched and windows_scale != 1
+    print(f"Window '{client.title}': position ({client.left}, {client.top}), size {client.width}x{client.height} screen pixels")
+    print(f"Monitor display scaling: {windows_scale:.0%}. Windows is {'STRETCHING' if is_stretched else 'not stretching'} the client.\n")
+    templates = {filename: cv2.imread(str(UI_TEMPLATES.joinpath(filename)), cv2.IMREAD_UNCHANGED) for filename in TEMPLATES}
 
+    # Look at the client the way `Window.initialize()` does: in game pixels, at each whole-number enlargement RuneLite can draw.
+    results = {}
+    for scale in SUPPORTED_DISPLAY_SCALES:
+        geometry.set_display_scale(scale)
+        client_img = Window("RuneLite", padding_top=26, padding_left=0).rectangle().screenshot()
+        results[scale] = {filename: score_template(template, client_img) for filename, template in templates.items()}
+        if scale == 1:
+            cv2.imwrite(str(SCREENSHOT), client_img)
+    geometry.set_display_scale(1)
+
+    def regions_found(scores: dict) -> int:
+        minimap = min(scores["minimap.png"][0], scores["minimap_fixed.png"][0])
+        return sum(score < FOUND_BELOW for score in (scores["chat.png"][0], scores["inv.png"][0], minimap))
+
+    best_scale = max(results, key=lambda scale: regions_found(results[scale]))
+    print(f"Interface as seen with the client drawn at {best_scale}x (the best of {', '.join(f'{scale}x' for scale in results)}):")
     for filename, region in TEMPLATES.items():
-        template = cv2.imread(str(UI_TEMPLATES.joinpath(filename)), cv2.IMREAD_UNCHANGED)
-        score, x, y = score_template(template, client_img)
-        line = f"{'FOUND' if score < FOUND_BELOW else 'not found':>9}  {region:<20} score {score:.3f} (needs < {FOUND_BELOW}) at ({x}, {y})"
-        if is_stretched and score >= FOUND_BELOW:
-            unscaled_score = score_template(template, client_img, display_scale=scale)[0]
-            line += f"  |  with the scaling undone: {unscaled_score:.3f} {'FOUND' if unscaled_score < FOUND_BELOW else 'not found'}"
-        print(line)
+        score, x, y = results[best_scale][filename]
+        print(f"{'FOUND' if score < FOUND_BELOW else 'not found':>9}  {region:<20} score {score:.3f} (needs < {FOUND_BELOW}) at game pixel ({x}, {y})")
+    print(f"Screenshot saved to {SCREENSHOT}")
 
-    if is_stretched:
+    if regions_found(results[best_scale]) == 3:
+        print(f"\nEverything the bots need was found with the client drawn at {best_scale}x. Bots detect that by themselves.")
+    elif is_stretched:
         print(
-            f"\nThe client is drawn at {scale:.0%} size, but everything the bots look for (UI templates, fonts, item sprites) is"
-            "\npixel-exact at 100%. Fix: close RuneLite, open 'RuneLite (configure)' from the Start menu, set Scale to 1, Save,"
-            "\nthen launch RuneLite again. The game will look small on this monitor; that's what 1:1 pixels looks like."
+            f"\nWindows is stretching the client to {windows_scale:.0%}, which blurs it. The bots need every game pixel drawn as an"
+            "\nexact block of screen pixels. Fix: close RuneLite, open 'RuneLite (configure)' from the Start menu, set Scale to a"
+            "\nwhole number (1 is pixel-for-pixel and small; 2 or 3 is easier on the eyes), Save, then launch RuneLite again."
         )
+    else:
+        print("\nThe interface wasn't found. Make sure you're logged in, the client isn't in 'Resizable - Modern' layout, and no interface is covering the minimap, chatbox or inventory.")
 
 
 if __name__ == "__main__":

@@ -19,6 +19,7 @@ from deprecated import deprecated
 
 import utilities.color as clr
 import utilities.debug as debug
+import utilities.geometry as geometry
 import utilities.imagesearch as imsearch
 import utilities.ocr as ocr
 import utilities.runelite_cv as rcv
@@ -83,7 +84,7 @@ class RuneLiteWindow(Window):
             height: The height to resize the window to.
         """
         if client := self.window:
-            client.size = (width, height)
+            client.size = (width * geometry.display_scale, height * geometry.display_scale)
 
 
 class RuneLiteBot(Bot, metaclass=ABCMeta):

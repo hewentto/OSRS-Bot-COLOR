@@ -1,9 +1,12 @@
 import math
 from typing import List, NamedTuple
 
+import random
+
 import cv2
 import mss
 import numpy as np
+import pyautogui as pag
 
 import utilities.random_util as rd
 
@@ -11,6 +14,49 @@ Point = NamedTuple("Point", x=int, y=int)
 
 # TODO: Remove this global variable. This is a temporary fix for a bug in mss.
 sct = mss.mss()
+
+"""
+RuneLite can enlarge the client by a whole number (the "Scale" setting in RuneLite (configure)), drawing every game pixel
+as a block of `display_scale` x `display_scale` screen pixels. Everything in this framework (Points, Rectangles, image
+templates, fonts) is measured in game pixels. Screen pixels only exist in the few functions below, which look at the
+screen or move the mouse. `Window.initialize()` detects the scale.
+"""
+display_scale = 1
+
+
+def set_display_scale(scale: int) -> None:
+    global display_scale
+    display_scale = scale
+
+
+def to_screen(point: Point) -> Point:
+    """
+    Converts a point in the game to a screen pixel (a random one within the block that the game pixel is drawn as).
+    """
+    if display_scale == 1:
+        return Point(round(point[0]), round(point[1]))
+    return Point(*(round(value) * display_scale + random.randrange(display_scale) for value in point[:2]))
+
+
+def from_screen(x: int, y: int) -> Point:
+    """
+    Converts a screen pixel to the point in the game that it shows.
+    """
+    return Point(int(x) // display_scale, int(y) // display_scale)
+
+
+def cursor_position() -> Point:
+    """
+    Returns the position of the mouse cursor, in game pixels.
+    """
+    return from_screen(*pag.position())
+
+
+def screen_size() -> Point:
+    """
+    Returns the size of the screen, in game pixels.
+    """
+    return from_screen(*pag.size())
 
 
 class Rectangle:
@@ -116,8 +162,9 @@ class Rectangle:
         """
         # with mss.mss() as sct:  # TODO: When MSS bug is fixed, reinstate this.
         global sct  # TODO: When MSS bug is fixed, remove this.
-        monitor = self.to_dict()
-        res = np.array(sct.grab(monitor))[:, :, :3]
+        monitor = {key: value * display_scale for key, value in self.to_dict().items()}
+        # One screen pixel per block is a game pixel exactly, as the blocks are solid (nearest-neighbor enlargement).
+        res = np.array(sct.grab(monitor))[::display_scale, ::display_scale, :3]
         if self.subtract_list:
             for area in self.subtract_list:
                 res[

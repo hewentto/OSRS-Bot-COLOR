@@ -14,8 +14,12 @@ import pywinctl
 from deprecated import deprecated
 
 import utilities.debug as debug
+import utilities.geometry as geometry
 import utilities.imagesearch as imsearch
 from utilities.geometry import Point, Rectangle
+
+# The whole-number enlargements of the client (RuneLite's "Scale" setting) that `Window.initialize()` looks for.
+SUPPORTED_DISPLAY_SCALES = (1, 2, 3, 4)
 
 
 class WindowInitializationError(Exception):
@@ -102,14 +106,14 @@ class Window:
         Returns the origin of the client window as a Point.
         """
         if client := self.window:
-            return Point(client.left, client.top)
+            return geometry.from_screen(client.left, client.top)
 
     def rectangle(self) -> Rectangle:
         """
         Returns a Rectangle outlining the entire client window.
         """
         if client := self.window:
-            return Rectangle(client.left, client.top, client.width, client.height)
+            return Rectangle.from_points(geometry.from_screen(client.left, client.top), geometry.from_screen(client.left + client.width, client.top + client.height))
 
     def resize(self, width: int, height: int) -> None:
         """
@@ -119,7 +123,7 @@ class Window:
             height: The height to resize the window to.
         """
         if client := self.window:
-            client.size = (width, height)
+            client.size = (width * geometry.display_scale, height * geometry.display_scale)
 
     def initialize(self):
         """
@@ -129,14 +133,15 @@ class Window:
             True if successful, False otherwise along with an error message.
         """
         start_time = time.time()
-        client_rect = self.rectangle()
-        a = self.__locate_minimap(client_rect)
-        b = self.__locate_chat(client_rect)
-        c = self.__locate_control_panel(client_rect)
-        d = self.__locate_game_view(client_rect)
-        if all([a, b, c, d]):  # if all templates found
-            print(f"Window.initialize() took {time.time() - start_time} seconds.")
-            return True
+        # The interface is only recognisable when it's looked at in game pixels, so whichever enlargement it's found at
+        # is the one RuneLite is using. The last known one is tried first.
+        for scale in sorted(SUPPORTED_DISPLAY_SCALES, key=lambda scale: scale != geometry.display_scale):
+            geometry.set_display_scale(scale)
+            client_rect = self.rectangle()
+            if self.__locate_minimap(client_rect) and self.__locate_chat(client_rect) and self.__locate_control_panel(client_rect) and self.__locate_game_view(client_rect):
+                print(f"Window.initialize() took {time.time() - start_time} seconds. Client is drawn at {scale}x.")
+                return True
+        geometry.set_display_scale(1)
         raise WindowInitializationError()
 
     def __locate_chat(self, client_rect: Rectangle) -> bool:
