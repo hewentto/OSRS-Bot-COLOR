@@ -299,15 +299,18 @@ class OSRSWDFishing(WillowsDadBot):
         Returns: boolean
         Args: None
         """
-        # get the current player animation
-        fishing_animation_list = [
-            animation.FISHING_BARBARIAN_ROD, animation.FISHING_BARBTAIL_HARPOON, animation.FISHING_BIG_NET, animation.FISHING_CAGE,
-            animation.FISHING_CRYSTAL_HARPOON, animation.FISHING_DRAGON_HARPOON, animation.FISHING_HARPOON, animation.FISHING_NET
-            ]
-        current_animation = self.api_m.get_animation_id()
-
-        # check if the current animation is woodcutting
-        return current_animation in fishing_animation_list
+        # TODO(vision): verify in game that reading the green "Fishing" status overlay works in place of animation IDs.
+        # Animation IDs came from the MorgHTTPClient plugin, which RuneLite disabled. The old check is kept below.
+        # # get the current player animation
+        # fishing_animation_list = [
+        # animation.FISHING_BARBARIAN_ROD, animation.FISHING_BARBTAIL_HARPOON, animation.FISHING_BIG_NET, animation.FISHING_CAGE,
+        # animation.FISHING_CRYSTAL_HARPOON, animation.FISHING_DRAGON_HARPOON, animation.FISHING_HARPOON, animation.FISHING_NET
+        # ]
+        # current_animation = self.api_m.get_animation_id()
+        #
+        # # check if the current animation is woodcutting
+        # return current_animation in fishing_animation_list
+        return bool(self.is_player_doing_action("Fishing"))
         
 
     def go_fish(self):

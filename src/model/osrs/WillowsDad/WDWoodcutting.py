@@ -205,12 +205,15 @@ class OSRSWDWoodcutting(WillowsDadBot):
         Returns: boolean
         Args: None
         """
-        # get the current player animation
-        woodcutting_animation_list = [animation.WOODCUTTING_3A_AXE, animation.WOODCUTTING_BRONZE, animation.WOODCUTTING_IRON, animation.WOODCUTTING_STEEL, animation.WOODCUTTING_BLACK, animation.WOODCUTTING_MITHRIL, animation.WOODCUTTING_ADAMANT, animation.WOODCUTTING_RUNE, animation.WOODCUTTING_DRAGON]
-        current_animation = self.api_m.get_animation_id()
-
-        # check if the current animation is woodcutting
-        return current_animation in woodcutting_animation_list
+        # TODO(vision): verify in game that reading the green "Woodcutting" status overlay works in place of animation IDs.
+        # Animation IDs came from the MorgHTTPClient plugin, which RuneLite disabled. The old check is kept below.
+        # # get the current player animation
+        # woodcutting_animation_list = [animation.WOODCUTTING_3A_AXE, animation.WOODCUTTING_BRONZE, animation.WOODCUTTING_IRON, animation.WOODCUTTING_STEEL, animation.WOODCUTTING_BLACK, animation.WOODCUTTING_MITHRIL, animation.WOODCUTTING_ADAMANT, animation.WOODCUTTING_RUNE, animation.WOODCUTTING_DRAGON]
+        # current_animation = self.api_m.get_animation_id()
+        #
+        # # check if the current animation is woodcutting
+        # return current_animation in woodcutting_animation_list
+        return bool(self.is_player_doing_action("Woodcutting"))
         
 
     def chop_trees(self, percentage):

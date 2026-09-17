@@ -7,8 +7,7 @@ import utilities.game_launcher as launcher
 import utilities.random_util as rand
 from model.bot import BotStatus
 from model.osrs.osrs_bot import OSRSBot
-from utilities.api.morg_http_client import MorgHTTPSocket
-from utilities.api.status_socket import StatusSocket
+from utilities.api.vision_api import VisionAPI
 from model.osrs.WillowsDad.WillowsDad_bot import WillowsDadBot
 
 
@@ -147,7 +146,7 @@ class OSRSWDCombat(WillowsDadBot, launcher.Launchable):
             self.api_m.wait_til_gained_xp("Prayer", 3)
             time.sleep(self.random_sleep_length())
 
-    def __eat(self, api: StatusSocket):
+    def __eat(self, api: VisionAPI):
         self.log_msg("HP is low.")
         food_slots = api.get_inv_item_indices(item_ids.all_food)
         if len(food_slots) == 0:
@@ -159,7 +158,7 @@ class OSRSWDCombat(WillowsDadBot, launcher.Launchable):
         self.mouse.move_to(self.win.inventory_slots[food_slots[0]].random_point())
         self.mouse.click()
 
-    def __loot(self, api: StatusSocket):
+    def __loot(self, api: VisionAPI):
         """Picks up loot while there is loot on the ground"""
         while self.pick_up_loot(self.loot_items):
             if api.get_is_inv_full():

@@ -3,7 +3,6 @@ import traceback
 from model.osrs.WillowsDad.WillowsDad_bot import WillowsDadBot
 import utilities.api.item_ids as ids
 import utilities.api.animation_ids as animation
-from utilities.api.status_socket import StatusSocket
 import utilities.color as clr
 import utilities.random_util as rd
 import utilities.imagesearch as imsearch

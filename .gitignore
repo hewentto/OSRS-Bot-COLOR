@@ -179,3 +179,8 @@ src/model/osrs/WillowsDad/credentials.csv
 *.psd
 src/utilities/api/T1G_API.py
 src/utilities/ScreenToClient.py
+
+# Sprites that bots asked for at runtime but couldn't find (see VISION_TODO.md)
+src/vision_missing_sprites.json
+# Screenshot of your game client taken by `python -m utilities.vision_check`
+src/vision_check_client*.png

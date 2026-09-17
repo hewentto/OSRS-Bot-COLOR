@@ -7,8 +7,7 @@ import utilities.color as clr
 import utilities.game_launcher as launcher
 from model.bot import BotStatus
 from model.osrs.osrs_bot import OSRSBot
-from utilities.api.morg_http_client import MorgHTTPSocket
-from utilities.api.status_socket import StatusSocket
+from utilities.api.vision_api import VisionAPI
 
 
 class OSRSCombat(OSRSBot, launcher.Launchable):
@@ -85,8 +84,8 @@ class OSRSCombat(OSRSBot, launcher.Launchable):
         self.log_msg("WARNING: This script is for testing and may not be safe for personal use. Please modify it to suit your needs.")
 
         # Setup API
-        api_morg = MorgHTTPSocket()
-        api_status = StatusSocket()
+        api_morg = VisionAPI(self)
+        api_status = api_morg
 
         self.toggle_auto_retaliate(True)
 
@@ -145,7 +144,7 @@ class OSRSCombat(OSRSBot, launcher.Launchable):
         self.update_progress(1)
         self.__logout("Finished.")
 
-    def __eat(self, api: StatusSocket):
+    def __eat(self, api: VisionAPI):
         self.log_msg("HP is low.")
         food_slots = api.get_inv_item_indices(item_ids.all_food)
         if len(food_slots) == 0:
@@ -156,7 +155,7 @@ class OSRSCombat(OSRSBot, launcher.Launchable):
         self.mouse.move_to(self.win.inventory_slots[food_slots[0]].random_point())
         self.mouse.click()
 
-    def __loot(self, api: StatusSocket):
+    def __loot(self, api: VisionAPI):
         """Picks up loot while there is loot on the ground"""
         while self.pick_up_loot(self.loot_items):
             if api.get_is_inv_full():

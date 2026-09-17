@@ -6,8 +6,7 @@ import utilities.color as clr
 from utilities.geometry import RuneLiteObject
 import utilities.random_util as rd
 from model.osrs.osrs_bot import OSRSBot
-from utilities.api.morg_http_client import MorgHTTPSocket
-from utilities.api.status_socket import StatusSocket
+from utilities.api.vision_api import VisionAPI
 import pyautogui as pag
 import utilities.imagesearch as imsearch
 import random
@@ -53,8 +52,8 @@ class OSRSSulfurCompost(WillowsDadBot):
         Main bot loop. We call setup() to set up the bot, then loop until the end time is reached.
         """
         # Setup APIs
-        # api_m = MorgHTTPSocket()
-        # api_s = StatusSocket()
+        # api_m = VisionAPI(self)
+        # api_s = VisionAPI(self)
         self.setup()
         # Main loop
         while time.time() - self.start_time < self.end_time:

@@ -128,8 +128,8 @@ class OSRSWDDegrimer(WillowsDadBot):
           functions.
         """
         # Setup APIs
-        # api_m = MorgHTTPSocket()
-        # api_s = StatusSocket()
+        # api_m = VisionAPI(self)
+        # api_s = VisionAPI(self)
         self.setup()
         # Main loop
         while time.time() - self.start_time < self.end_time:

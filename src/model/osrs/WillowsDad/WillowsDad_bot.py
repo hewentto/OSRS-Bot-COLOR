@@ -6,8 +6,7 @@ from model.osrs.osrs_bot import OSRSBot
 import utilities.color as clr
 from utilities.geometry import Rectangle, RuneLiteObject, Point
 import utilities.random_util as rd
-from utilities.api.morg_http_client import MorgHTTPSocket
-from utilities.api.status_socket import StatusSocket
+from utilities.api.vision_api import VisionAPI
 import utilities.imagesearch as imsearch
 import random
 import pyautogui as pag
@@ -88,8 +87,9 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         self.last_break = time.time()
         self.multiplier = 1
         self.loop_count = 0
-        self.api_m = MorgHTTPSocket()
-        self.api_s = StatusSocket()
+        # The MorgHTTPClient and VisionAPI plugins were disabled by RuneLite, so both APIs are answered by vision now.
+        self.api_m = VisionAPI(self)
+        self.api_s = self.api_m
         self.spec_energy = self.get_special_energy()
         self.last_runtime = 0
         self.safety_squares = self.get_all_tagged_in_rect(self.win.game_view ,clr.CYAN)

@@ -5,8 +5,7 @@ import utilities.color as clr
 import utilities.random_util as rd
 from model.osrs.osrs_bot import OSRSBot
 from model.runelite_bot import BotStatus
-from utilities.api.morg_http_client import MorgHTTPSocket
-from utilities.api.status_socket import StatusSocket
+from utilities.api.vision_api import VisionAPI
 from utilities.geometry import RuneLiteObject
 
 
@@ -42,8 +41,8 @@ class OSRSWoodcutter(OSRSBot):
 
     def main_loop(self):
         # Setup API
-        api_m = MorgHTTPSocket()
-        api_s = StatusSocket()
+        api_m = VisionAPI(self)
+        api_s = api_m
 
         self.log_msg("Selecting inventory...")
         self.mouse.move_to(self.win.cp_tabs[3].random_point())
@@ -131,7 +130,7 @@ class OSRSWoodcutter(OSRSBot):
             self.mouse.move_to(tree.random_point())
         return True
 
-    def __drop_logs(self, api_s: StatusSocket):
+    def __drop_logs(self, api_s: VisionAPI):
         """
         Private function for dropping logs. This code is used in multiple places, so it's been abstracted.
         Since we made the `api` and `logs` variables assigned to `self`, we can access them from this function.

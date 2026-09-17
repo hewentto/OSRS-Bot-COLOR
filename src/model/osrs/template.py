@@ -4,8 +4,7 @@ import utilities.api.item_ids as ids
 import utilities.color as clr
 import utilities.random_util as rd
 from model.osrs.osrs_bot import OSRSBot
-from utilities.api.morg_http_client import MorgHTTPSocket
-from utilities.api.status_socket import StatusSocket
+from utilities.api.vision_api import VisionAPI
 
 
 class OSRSTemplate(OSRSBot):
@@ -68,8 +67,8 @@ class OSRSTemplate(OSRSBot):
           operator to access their functions.
         """
         # Setup APIs
-        # api_m = MorgHTTPSocket()
-        # api_s = StatusSocket()
+        # api_m = VisionAPI(self)
+        # api_s = VisionAPI(self)
 
         # Main loop
         start_time = time.time()
