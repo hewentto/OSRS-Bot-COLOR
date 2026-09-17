@@ -350,7 +350,7 @@ Code marked `TODO(vision)`:
 
 Code marked `TODO(vision)`:
 
-- [ ] line 208: verify in game that reading the green "Woodcutting" status overlay works in place of animation IDs.
+- [ ] line 218: verify in game that reading the Woodcutting overlay's status works in place of animation IDs.
 
 ## model/osrs/woodcutter.py (11/11 sprites)
 

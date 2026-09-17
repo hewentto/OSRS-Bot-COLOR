@@ -8,7 +8,16 @@ import utilities.imagesearch as imsearch
 import pyautogui as pag
 
 
+# The longest a walk to a tree should take (seconds).
+WALK_TIMEOUT = 12
+
+
 class OSRSWDWoodcutting(WillowsDadBot):
+    # How often to read the Woodcutting overlay while waiting on it (seconds).
+    OVERLAY_POLL_SECONDS = 0.1
+    # How long after clicking a tree the character may still be standing still, waiting for the next game tick (seconds).
+    WALK_START_GRACE = 1.2
+
     def __init__(self):
         bot_title = "WD Woodcutting"
         description = """Chops wood and banks at supported locations."""
@@ -97,7 +106,7 @@ class OSRSWDWoodcutting(WillowsDadBot):
                     self.bank_or_drop(deposit_slots)
 
                 # Check if idle
-                if self.api_m.get_is_player_idle():
+                if self.is_ready_for_next_tree():
 
                     self.pick_up_nests()
 
@@ -107,11 +116,12 @@ class OSRSWDWoodcutting(WillowsDadBot):
 
                     self.log_msg("Chopping trees...")
                     self.chop_trees(percentage)
+                    self.wait_for_chopping_to_start()
 
                 if self.is_woodcutting():
                     if self.afk_train and self.is_runelite_focused():
                         self.switch_window()
-                    self.sleep(percentage)
+                    self.sleep_while_chopping()
                     
             except Exception as e:
                 self.log_msg(f"Exception: {e}")
@@ -205,7 +215,7 @@ class OSRSWDWoodcutting(WillowsDadBot):
         Returns: boolean
         Args: None
         """
-        # TODO(vision): verify in game that reading the green "Woodcutting" status overlay works in place of animation IDs.
+        # TODO(vision): verify in game that reading the Woodcutting overlay's status works in place of animation IDs.
         # Animation IDs came from the MorgHTTPClient plugin, which RuneLite disabled. The old check is kept below.
         # # get the current player animation
         # woodcutting_animation_list = [animation.WOODCUTTING_3A_AXE, animation.WOODCUTTING_BRONZE, animation.WOODCUTTING_IRON, animation.WOODCUTTING_STEEL, animation.WOODCUTTING_BLACK, animation.WOODCUTTING_MITHRIL, animation.WOODCUTTING_ADAMANT, animation.WOODCUTTING_RUNE, animation.WOODCUTTING_DRAGON]
@@ -213,8 +223,63 @@ class OSRSWDWoodcutting(WillowsDadBot):
         #
         # # check if the current animation is woodcutting
         # return current_animation in woodcutting_animation_list
-        return bool(self.is_player_doing_action("Woodcutting"))
-        
+        return self.action_status("Woodcutting") is True
+
+
+    def is_ready_for_next_tree(self):
+        """
+        Checks whether it's time to click a tree: the character isn't chopping.
+        Returns: boolean
+        """
+        status = self.action_status("Woodcutting")
+        if status is None:
+            # The overlay only shows once the first log of a session is cut. Until then, watch the character for movement.
+            return self.api_m.get_is_player_idle()
+        return not status
+
+
+    def wait_for_chopping_to_start(self, timeout=WALK_TIMEOUT):
+        """
+        Waits out the walk to a tree that was just clicked. The overlay stays red ("NOT woodcutting") the whole way there,
+        so red alone doesn't mean the click failed.
+        Args:
+            timeout: The longest a walk to a tree should take (seconds).
+        Returns:
+            True once the character is chopping. False if it isn't going to: it stopped moving without chopping (the tree
+            fell before it got there), the walk timed out, or there's no overlay to watch.
+        """
+        clicked_at = time.time()
+        while time.time() - clicked_at < timeout:
+            status = self.action_status("Woodcutting")
+            if status is None:
+                return False
+            if status:
+                return True
+            # The character doesn't set off until the game tick after the click, so standing still means nothing at first.
+            if time.time() - clicked_at > self.WALK_START_GRACE and self.api_m.get_is_player_idle(poll_seconds=0.3):
+                return False
+            time.sleep(self.OVERLAY_POLL_SECONDS)
+        return False
+
+
+    def sleep_while_chopping(self):
+        """
+        Waits until the character stops chopping (the tree fell or the inventory filled up), which the overlay shows within a
+        game tick. This is `sleep()`, but watching the overlay instead of watching the character for movement.
+        """
+        self.breaks_skipped = 0
+        afk_start_time = time.time()
+
+        while self.action_status("Woodcutting"):
+            time.sleep(self.OVERLAY_POLL_SECONDS)
+            self.is_runelite_focused()
+            self.breaks_skipped = int(time.time() - afk_start_time) // 15
+
+        if self.breaks_skipped > 0:
+            self.roll_chance_passed = True
+            self.multiplier += self.breaks_skipped * .25
+            self.log_msg(f"Skipped {self.breaks_skipped} break rolls while afk, percentage chance is now {round((self.multiplier * .01) * 100)}%")
+
 
     def chop_trees(self, percentage):
         """

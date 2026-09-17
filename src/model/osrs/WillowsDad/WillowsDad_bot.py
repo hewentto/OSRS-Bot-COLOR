@@ -19,9 +19,24 @@ import utilities.ocr as ocr
 from .Users import User
 
 
+class Snapshot(Rectangle):
+    """
+    A Rectangle that's only screenshotted once, so that everything read from it comes from the same moment.
+    """
+
+    def screenshot(self) -> cv2.Mat:
+        if not hasattr(self, "image"):
+            self.image = super().screenshot()
+        return self.image
+
+
 # New class WillowsDad_bot
 class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
     """Willows Dad Bot class."""
+
+    # Where RuneLite's skilling overlays show their status, relative to the top-left corner of the game view:
+    # (left, top, width, height). It starts just under the mouseover text and has room for the overlay to be nudged around.
+    ACTION_STATUS_REGION = (0, 18, 170, 44)
 
     # Update the BOT_IMAGES path
     WILLOWSDAD_IMAGES = Path(__file__).parent.joinpath("WillowsDad_images")
@@ -154,6 +169,26 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
             self.roll_chance_passed = True
             self.multiplier += self.breaks_skipped * .25
             self.log_msg(f"Skipped {self.breaks_skipped} break rolls while afk, percentage chance is now {round((self.multiplier * .01) * 100)}%")
+
+
+    def action_status(self, action: str) -> Union[bool, None]:
+        """
+        Reads the status line of a RuneLite skilling overlay (Woodcutting, Fishing, Mining...) from a single screenshot of
+        the top-left of the game view. The plugins base it on the character's animation, so it changes the moment an action starts or stops,
+        which makes it quicker and surer than watching the character for movement.
+        Args:
+            action: The status shown while the action is happening (E.g., "Woodcutting"). Case sensitive.
+        Returns:
+            True if the status is green (E.g., "Woodcutting"), False if it's red (E.g., "NOT woodcutting"), or None if the
+            overlay isn't showing. These overlays only appear once the first log/fish/ore of a session has been gathered.
+        """
+        left, top, width, height = self.ACTION_STATUS_REGION
+        region = Snapshot(self.win.game_view.left + left, self.win.game_view.top + top, width, height)
+        if ocr.find_text(action, region, ocr.PLAIN_12, clr.GREEN):
+            return True
+        if ocr.find_text("NOT", region, ocr.PLAIN_12, clr.RED):
+            return False
+        return None
 
 
     def random_sleep_length(self, delay_min=0, delay_max=0):
