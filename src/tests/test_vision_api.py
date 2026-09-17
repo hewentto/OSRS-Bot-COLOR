@@ -207,6 +207,24 @@ class InventoryOccupancyTests(VisionTestCase):
         draw_inventory(self.screen, self.bot, {1: "Oak_logs.png", 13: "Oak_logs.png", 27: "Willow_logs.png"})
         self.assertEqual([item["index"] for item in self.api.get_inv()], [1, 13, 27])
 
+    def test_item_the_color_of_the_inventory_background_still_fills_its_slot(self):
+        # Willow logs at the game's default brightness are close enough to the background to pass for an empty slot.
+        draw_inventory(self.screen, self.bot, {i: "Willow_logs.png" for i in range(28)}, brightness=0.8)
+        self.assertTrue(self.api.get_is_inv_full())
+
+    def test_single_slot_holding_an_item_is_not_empty(self):
+        draw_inventory(self.screen, self.bot, {27: "Willow_logs.png"}, brightness=0.8)
+        self.assertFalse(self.api.get_is_inv_slot_empty(27))
+
+    def test_single_slot_holding_nothing_is_empty(self):
+        draw_inventory(self.screen, self.bot, {27: "Willow_logs.png"}, brightness=0.8)
+        self.assertTrue(self.api.get_is_inv_slot_empty(26))
+
+    def test_stack_number_alone_does_not_fill_a_slot(self):
+        draw_inventory(self.screen, self.bot, {})
+        draw_stack_number(self.screen, self.bot.win.inventory_slots[5], "1337")
+        self.assertTrue(self.api.get_is_inv_empty())
+
     def test_occupancy_needs_no_item_sprites(self):
         shutil.rmtree(self.sprite_dir)
         draw_inventory(self.screen, self.bot, {4: "Oak_logs.png"})

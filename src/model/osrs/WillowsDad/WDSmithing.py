@@ -90,7 +90,7 @@ class OSRSWDSmithing(WillowsDadBot):
                     self.work()
                 
                 # while working, check for breaks
-                while imsearch.search_img_in_rect(self.WILLOWSDAD_IMAGES.joinpath("emptyslot.png"), self.win.inventory_slots[27]) is None:
+                while not self.is_last_inv_slot_empty():
                     if self.check_for_level_up(self.WILLOWSDAD_IMAGES.joinpath("level_up_smithing.png")) is True:
                         self.work()
                     self.check_break(runtime, percentage, minutes_since_last_break, seconds)

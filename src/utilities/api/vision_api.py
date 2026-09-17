@@ -26,7 +26,6 @@ import utilities.ocr as ocr
 from utilities.geometry import Rectangle
 
 ITEM_SPRITES = imsearch.BOT_IMAGES.joinpath("items")
-EMPTY_SLOT_IMG = imsearch.BOT_IMAGES.joinpath("ui_templates", "empty_slot.png")
 MISSING_SPRITES_LOG = Path(__file__).parent.parent.parent.joinpath("vision_missing_sprites.json")
 
 _ITEM_NAMES: Dict[int, str] = {value: name for name, value in vars(item_ids).items() if isinstance(value, int) and name.isupper()}
@@ -85,6 +84,10 @@ def estimate_brightness(sprite: cv2.Mat, seen: cv2.Mat) -> Union[float, None]:
     darkening = np.median(np.log(seen[comparable] / 255) / np.log(expected[comparable] / 255))
     return float(np.clip(darkening * WIKI_BRIGHTNESS, WIKI_BRIGHTNESS, _DARKEST_BRIGHTNESS))
 
+
+# Every item is drawn with an outline of this exact color (BGR). Pure black means transparent to the game, so this is the
+# darkest color it can draw, and brightness doesn't change it. The inventory's background never contains it.
+_ITEM_OUTLINE_COLOR = (1, 0, 0)
 
 # Stack counts are drawn over the top-left of an item in one of these exact colors (BGR), with a black drop shadow.
 _STACK_NUMBER_COLORS = [(0, 255, 255), (255, 255, 255), (128, 255, 0)]
@@ -177,8 +180,8 @@ class VisionAPI:
     # Max normalized squared difference for a sprite to count as found (0 is a pixel-perfect match).
     # Similar items score surprisingly close to each other (Logs vs Oak logs: 0.011), so keep this tight.
     ITEM_MATCH_CONFIDENCE = 0.005
-    # Max normalized squared difference for the middle of a slot to count as bare inventory background.
-    EMPTY_SLOT_CONFIDENCE = 0.15
+    # Fewest outline pixels in a slot for it to count as holding an item. The smallest items have 45; an empty slot has none.
+    MIN_ITEM_OUTLINE_PIXELS = 10
     # Pixels of slack around the inventory when screenshotting it, in case the control panel was located a pixel off.
     INVENTORY_PADDING = 2
     # The sliver of the game view that the player's character stands in: (scale_width, scale_height, anchor_x, anchor_y).
@@ -210,7 +213,6 @@ class VisionAPI:
         self.__reported_unsupported = set()
         self.brightness = None  # The game's brightness setting. Detected the first time an item is recognised.
         self.__sprites_by_shape = None  # Loaded the first time look-alikes are needed
-        self.__empty_slot_img = cv2.imread(str(EMPTY_SLOT_IMG), cv2.IMREAD_UNCHANGED)
 
     # --- Inventory (no sprites needed) ---
     def get_inv(self) -> List[dict]:
@@ -235,10 +237,18 @@ class VisionAPI:
         """
         return not self.get_inv()
 
+    def get_is_inv_slot_empty(self, slot: int) -> bool:
+        """
+        Checks if an inventory slot has nothing in it. The inventory tab must be open.
+        Args:
+            slot: The index of the slot (0-27). Negative indexes count from the end, so -1 is the last slot.
+        """
+        return self.__is_slot_empty(self.bot.win.inventory_slots[slot].screenshot())
+
     def __is_slot_empty(self, slot_img: cv2.Mat) -> bool:
-        h, w = slot_img.shape[:2]
-        middle = slot_img[h // 4 : h - h // 4, w // 4 : w - w // 4]
-        return sprite_match_score(self.__empty_slot_img, middle) <= self.EMPTY_SLOT_CONFIDENCE
+        # Looking for an item's outline, rather than for bare background, works for items that blend into the background
+        # (E.g., willow logs at the game's default brightness).
+        return bool(np.all(slot_img == _ITEM_OUTLINE_COLOR, axis=2).sum() < self.MIN_ITEM_OUTLINE_PIXELS)
 
     # --- Inventory (needs item sprites) ---
     def get_inv_item_indices(self, item_id: Union[List[int], int]) -> List[int]:

@@ -444,13 +444,7 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         Checks if inventory is empty.
         Returns: bool
         """
-        for i in range(len(self.win.inventory_slots)):
-            slot_location = self.win.inventory_slots[i].scale(.5,.5)
-            slot_img = imsearch.BOT_IMAGES.joinpath(self.WILLOWSDAD_IMAGES, "emptyslot.png")
-            if slot := imsearch.search_img_in_rect(slot_img, slot_location):
-                continue
-            return False
-        return True
+        return self.api_m.get_is_inv_empty()
     
 
     def get_first_occurence(self, img_path:Path):
@@ -466,22 +460,14 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
         Checks if inventory is full.
         Returns: bool
         """
-        for i in range(len(self.win.inventory_slots)):
-            slot_location = self.win.inventory_slots[i].scale(.5,.5)
-            slot_img = imsearch.BOT_IMAGES.joinpath(self.WILLOWSDAD_IMAGES, "emptyslot.png")
-            if slot := imsearch.search_img_in_rect(slot_img, slot_location):
-                return False
-        return True
+        return self.api_m.get_is_inv_full()
     
     def is_last_inv_slot_empty(self):
         """
         Checks if last inventory slot is empty.
         Returns: bool
         """
-        slot_location = self.win.inventory_slots[-1].scale(.5,.5)
-        slot_img = imsearch.BOT_IMAGES.joinpath(self.WILLOWSDAD_IMAGES, "emptyslot.png")
-        slot = bool(imsearch.search_img_in_rect(slot_img, slot_location))
-        return slot
+        return self.api_m.get_is_inv_slot_empty(-1)
 
 
     def open_bank(self):
@@ -1471,7 +1457,5 @@ class WillowsDadBot(OSRSBot, launcher.Launchable, metaclass=ABCMeta):
     def is_inv_slot_empty(self, slot: int):
         """
         Checks if the inventory slot is empty."""
-        slot_location = self.win.inventory_slots[slot].scale(.5,.5)
-        slot_img = imsearch.BOT_IMAGES.joinpath(self.WILLOWSDAD_IMAGES, "emptyslot.png")
-        slot = bool(imsearch.search_img_in_rect(slot_img, slot_location))
+        return self.api_m.get_is_inv_slot_empty(slot)
         return slot
